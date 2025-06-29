@@ -1,9 +1,9 @@
 package config
 
 import (
-	"golang-di/pkg/log"
 	"os"
 	"path/filepath"
+	"scaffold/pkg/log"
 	"testing"
 
 	"github.com/spf13/viper"

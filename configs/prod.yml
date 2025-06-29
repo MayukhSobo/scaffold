@@ -25,7 +25,7 @@ log:
     json_format: true
   file_logger:
     enabled: true
-    directory: "/var/log/golang-di"
+    directory: "/var/log/scaffold"
     filename: "app.log"
     json_format: true
     max_size: 100

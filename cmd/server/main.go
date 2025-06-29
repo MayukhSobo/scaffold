@@ -2,8 +2,8 @@ package main
 
 import (
 	"fmt"
-	"golang-di/pkg/config"
-	"golang-di/pkg/log"
+	"scaffold/pkg/config"
+	"scaffold/pkg/log"
 
 	"github.com/spf13/viper"
 )

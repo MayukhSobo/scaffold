@@ -1,8 +1,8 @@
 package service
 
 import (
-	"golang-di/internal/model"
-	"golang-di/internal/repository"
+	"scaffold/internal/model"
+	"scaffold/internal/repository"
 )
 
 type UserService interface {

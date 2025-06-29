@@ -16,7 +16,7 @@ This package follows proper dependency injection principles:
 ```go
 // ✅ RECOMMENDED: Use viper configuration for logger creation
 import (
-    "golang-di/pkg/config"
+    "scaffold/pkg/config"
     "github.com/spf13/viper"
 )
 

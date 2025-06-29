@@ -1,6 +1,6 @@
 package service
 
-import "golang-di/pkg/log"
+import "scaffold/pkg/log"
 
 type Service struct {
 	logger log.Logger

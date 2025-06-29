@@ -1,7 +1,7 @@
 package repository
 
 import (
-	"golang-di/internal/model"
+	"scaffold/internal/model"
 )
 
 type UserRepository interface {

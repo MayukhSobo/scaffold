@@ -1,7 +1,7 @@
 package repository
 
 import (
-	"golang-di/pkg/log"
+	"scaffold/pkg/log"
 
 	"gorm.io/gorm"
 )

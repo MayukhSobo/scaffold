@@ -1,10 +1,10 @@
 package handler
 
 import (
-	"golang-di/internal/service"
-	resp "golang-di/pkg/helper"
-	"golang-di/pkg/log"
 	"net/http"
+	"scaffold/internal/service"
+	resp "scaffold/pkg/helper"
+	"scaffold/pkg/log"
 
 	"github.com/gin-gonic/gin"
 )

@@ -2,10 +2,10 @@ package server
 
 import (
 	"bytes"
-	"golang-di/internal/handler"
-	"golang-di/pkg/log"
 	"net/http"
 	"net/http/httptest"
+	"scaffold/internal/handler"
+	"scaffold/pkg/log"
 	"testing"
 
 	"github.com/gin-gonic/gin"

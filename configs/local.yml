@@ -23,10 +23,10 @@ log:
     colors: true
     json_format: false
   file_logger:
-    enabled: false              # Disabled for local development (console is enough)
-    directory: "logs"           # Directory where log files will be created
-    filename: "app.log"         # Log file name
-    json_format: true           # Use JSON format for file logs
+    enabled: false # Disabled for local development (console is enough)
+    directory: "logs" # Directory where log files will be created
+    filename: "app.log" # Log file name
+    json_format: true # Use JSON format for file logs
     max_size: 100
     max_backups: 3
     max_age: 7
@@ -35,7 +35,7 @@ log:
   # datadog_logger:
   #   enabled: false
   #   api_key: ""
-  #   service: "golang-di"
+  #   service: "scaffold"
   # logdna_logger:
   #   enabled: false
   #   ingestion_key: ""

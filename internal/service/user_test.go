@@ -2,8 +2,8 @@ package service
 
 import (
 	"bytes"
-	"golang-di/internal/repository"
-	"golang-di/pkg/log"
+	"scaffold/internal/repository"
+	"scaffold/pkg/log"
 	"testing"
 
 	"gorm.io/gorm"

@@ -1,7 +1,7 @@
 package handler
 
 import (
-	"golang-di/pkg/log"
+	"scaffold/pkg/log"
 )
 
 type Handler struct {

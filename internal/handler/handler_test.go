@@ -2,7 +2,7 @@ package handler
 
 import (
 	"bytes"
-	"golang-di/pkg/log"
+	"scaffold/pkg/log"
 	"testing"
 )
 

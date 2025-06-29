@@ -2,9 +2,9 @@ package config
 
 import (
 	"fmt"
-	"golang-di/pkg/log"
 	"os"
 	"path/filepath"
+	"scaffold/pkg/log"
 
 	"github.com/spf13/viper"
 )

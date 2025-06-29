@@ -1,10 +1,10 @@
 package server
 
 import (
-	"golang-di/internal/handler"
-	"golang-di/internal/middleware"
-	resp "golang-di/pkg/helper"
-	"golang-di/pkg/log"
+	"scaffold/internal/handler"
+	"scaffold/internal/middleware"
+	resp "scaffold/pkg/helper"
+	"scaffold/pkg/log"
 
 	"github.com/gin-gonic/gin"
 )
