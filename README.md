@@ -38,6 +38,31 @@ A production-ready Go application boilerplate, engineered for performance, devel
 
 ---
 
+## 🛠️ Key Dependencies
+
+### Core Libraries
+
+| Library                               | Description                               |
+| ------------------------------------- | ----------------------------------------- |
+| [`github.com/gin-gonic/gin`](https://github.com/gin-gonic/gin) | High-performance HTTP web framework. |
+| [`github.com/spf13/viper`](https://github.com/spf13/viper) | Complete configuration solution. |
+| [`github.com/rs/zerolog`](https://github.com/rs/zerolog) | Blazing fast, structured JSON logger. |
+| [`gorm.io/gorm`](https://github.com/go-gorm/gorm) | The fantastic ORM library for Go. |
+| [`gopkg.in/natefinch/lumberjack.v2`](https://github.com/natefinch/lumberjack) | Log rotation for file-based logging. |
+
+### Development & Tooling
+
+| Tool | Description |
+|---|---|
+| [`github.com/air-verse/air`](https://github.com/air-verse/air) | Live-reloading for Go applications. |
+| [`gotest.tools/gotestsum`](https://github.com/gotestyourself/gotestsum) | 'go test' runner with custom output formatting. |
+| [`github.com/golangci/golangci-lint`](https://github.com/golangci/golangci-lint) | Fast Go linters runner. |
+| [`github.com/axw/gocov`](https://github.com/axw/gocov) | Coverage reporting tool. |
+| [`github.com/matm/gocov-html`](https://github.com/matm/gocov-html) | Generates HTML reports from `gocov` data. |
+| [`github.com/nikolaydubina/go-cover-treemap`](https://github.com/nikolaydubina/go-cover-treemap)| Generates visual treemaps for coverage. |
+
+---
+
 ## 🏗️ Project Structure
 
 ```
@@ -180,7 +205,7 @@ For a quick debug build with race detection enabled:
 ```bash
 task build
 ```
-This creates a binary `build/debug/scaffold`.
+This creates a binary at `build/debug/scaffold-debug`.
 
 ### Production Release Builds
 
