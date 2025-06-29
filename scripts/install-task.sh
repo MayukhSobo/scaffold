@@ -23,15 +23,16 @@ fi
 # Move the downloaded binary to a common bin location
 # Use sudo if necessary
 if [ -w "/usr/local/bin" ]; then
-    mv ./task /usr/local/bin/task
+    mv ./bin/task /usr/local/bin/task
     echo "✅ Task installed successfully to /usr/local/bin/task"
 else
     echo "Sudo permissions required to move Task to /usr/local/bin"
-    sudo mv ./task /usr/local/bin/task
+    sudo mv ./bin/task /usr/local/bin/task
     echo "✅ Task installed successfully to /usr/local/bin/task"
 fi
 
 # Verify installation
+rm -rf bin
 echo ""
 echo "Verifying installation..."
 task --version 
