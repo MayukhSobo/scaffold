@@ -29,16 +29,6 @@ jobs:
       with:
         version: 3.x
 
-    # - name: Cache Go modules
-    #   uses: actions/cache@v4
-    #   with:
-    #     path: |
-    #       ~/.cache/go-build
-    #       ~/go/pkg/mod
-    #     key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-    #     restore-keys: |
-    #       ${{ runner.os }}-go-
-
     - name: Install dependencies
       run: task deps:install
 
@@ -47,17 +37,6 @@ jobs:
 
     - name: Run tests with race detection
       run: task test:test:race
-
-    - name: Generate coverage report
-      run: task test:test:coverage
-
-    - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@v4
-      with:
-        file: ./reports/coverage.out
-        flags: unittests
-        name: codecov-umbrella
-        fail_ci_if_error: false
 
   lint:
     name: Lint
