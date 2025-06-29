@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="scaffold.png" alt="Scaffold Banner" width="400" height="400"/>
+  <img src="scaffold.png" alt="Scaffold Banner"/>
 </div>
 
 # 🚀 Scaffold: High-Performance Go Application Boilerplate
