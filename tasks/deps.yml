@@ -2,15 +2,7 @@ version: "3"
 
 tasks:
   # Dependency management
-  deps:
-    desc: Download and install dependencies
-    silent: true
-    cmds:
-    - go mod download
-    - go mod tidy
-    - echo "Dependencies updated"
-
-  deps:install:
+  install:
     desc: Install/update dependencies
     silent: true
     cmds:
@@ -18,10 +10,64 @@ tasks:
     - go mod tidy
     - echo "Dependencies installed"
 
-  deps:update:
-    desc: Update all dependencies
+  update:
+    desc: Update all dependencies to latest versions
     silent: true
     cmds:
     - go get -u ./...
     - go mod tidy
-    - echo "Dependencies updated to latest versions" 
+    - echo "Dependencies updated to latest versions"
+
+  patch:
+    desc: Update dependencies to latest patch versions only
+    silent: true
+    cmds:
+    - go get -u=patch ./...
+    - go mod tidy
+    - echo "Dependencies updated to latest patch versions"
+
+  verify:
+    desc: Verify dependencies have expected content
+    silent: true
+    cmds:
+    - go mod verify
+    - echo "Dependencies verified successfully"
+
+  vendor:
+    desc: Make vendored copy of dependencies
+    silent: true
+    cmds:
+    - go mod vendor
+    - echo "Dependencies vendored to vendor/ directory"
+
+  clean:vendor:
+    desc: Remove vendor directory
+    silent: true
+    cmds:
+    - go mod vendor
+    - echo "Dependencies vendored to vendor/ directory"
+
+  clean:cache:
+    desc: Clean the module download cache
+    silent: true
+    cmds:
+    - go clean -modcache
+    - echo "Module cache cleaned"
+
+  clean:all:
+    desc: Clean all caches and temporary files
+    silent: true
+    cmds:
+    - go clean -cache
+    - go clean -modcache
+    - go clean -testcache
+    - go clean -fuzzcache
+    - echo "All Go caches cleaned"
+
+  outdated:
+    desc: Check for outdated dependencies
+    silent: true
+    cmds:
+    - |
+      echo "Checking for outdated dependencies..."
+      go list -u -m all | grep -E '\[.*\]' || echo "All dependencies are up to date"

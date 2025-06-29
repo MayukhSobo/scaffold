@@ -2,7 +2,7 @@ version: "3"
 
 tasks:
   # Config tasks
-  config:validate:
+  validate:
     desc: Validate configuration files
     silent: true
     cmds:

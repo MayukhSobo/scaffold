@@ -2,7 +2,7 @@ version: "3"
 
 tasks:
   # Utility tasks
-  clean:
+  all:
     desc: Clean all build artifacts
     silent: true
     cmds:
@@ -12,35 +12,35 @@ tasks:
     - go clean -cache
     - go clean -testcache
 
-  clean:debug:
+  debug:
     desc: Clean development build artifacts only
     silent: true
     cmds:
     - rm -rf {{.BUILD_DIR}}/debug
     - echo "Development build artifacts cleaned"
 
-  clean:release:linux:
+  release:linux:
     desc: Clean Linux release build artifacts only
     silent: true
     cmds:
     - rm -rf {{.BUILD_DIR}}/linux
     - echo "Linux release build artifacts cleaned"
 
-  clean:release:darwin:
+  release:darwin:
     desc: Clean macOS release build artifacts only
     silent: true
     cmds:
     - rm -rf {{.BUILD_DIR}}/darwin
     - echo "macOS release build artifacts cleaned"
 
-  clean:release:windows:
+  release:windows:
     desc: Clean Windows release build artifacts only
     silent: true
     cmds:
     - rm -rf {{.BUILD_DIR}}/windows
     - echo "Windows release build artifacts cleaned"
 
-  clean:release:all:
+  release:all:
     desc: Clean all release build artifacts
     silent: true
     cmds:

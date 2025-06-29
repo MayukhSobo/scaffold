@@ -14,9 +14,10 @@ tasks:
     cmds:
     - go run ./{{.CMD_DIR}} --config={{.CONFIG_DIR}}/prod.yml
 
-  dev:
+  hot:
     desc: Run the application in development mode with hot reload
     silent: true
+    deps: [ ":build:debug" ]
     cmds:
     - |
       if ! command -v air &> /dev/null; then
