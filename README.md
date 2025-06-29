@@ -1,3 +1,7 @@
+<div align="center">
+  <img src="scaffold.png" alt="Scaffold Banner" width="400" height="400"/>
+</div>
+
 # 🚀 Scaffold: High-Performance Go Application Boilerplate
 
 <div align="center">
