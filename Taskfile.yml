@@ -27,7 +27,7 @@ vars:
   COVERAGE_DIR: reports
 
 env:
-  CGO_ENABLED: 0
+  CGO_ENABLED: 1
   GOOS: '{{OS}}'
   GOARCH: '{{ARCH}}'
 

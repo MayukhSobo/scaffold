@@ -26,7 +26,6 @@ go.work.sum
 *.dll
 *.so
 *.dylib
-server
 golang-di
 
 # IDE
