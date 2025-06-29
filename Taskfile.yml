@@ -14,6 +14,7 @@ includes:
 
 vars:
   APP_NAME: Scaffold
+  DOCKER_IMAGE_NAME: scaffold  # Lowercase version for Docker
   BUILD_DIR: build
   CMD_DIR: cmd/server
   CONFIG_DIR: configs

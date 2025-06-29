@@ -2,15 +2,50 @@ version: "3"
 
 tasks:
   # Docker tasks
-  docker:build:
+  build:
     desc: Build Docker image
     silent: true
     cmds:
-    - docker build -t {{.APP_NAME}}:{{.VERSION}} .
-    - echo "Docker image built {{.APP_NAME}}:{{.VERSION}}"
+    - docker build -t {{.DOCKER_IMAGE_NAME}}:{{.VERSION}} .
+    - echo "Docker image built - {{.DOCKER_IMAGE_NAME}}:{{.VERSION}}"
 
-  docker:run:
+  run:
     desc: Run Docker container
     silent: true
     cmds:
-    - docker run --rm -p 8080:8080 {{.APP_NAME}}:{{.VERSION}} 
+    - docker run --rm -p 8080:8080 {{.DOCKER_IMAGE_NAME}}:{{.VERSION}}
+    - echo "Docker container started - {{.DOCKER_IMAGE_NAME}}:{{.VERSION}}"
+
+  push:
+    desc: Push Docker image to registry
+    silent: true
+    cmds:
+    - docker push {{.DOCKER_IMAGE_NAME}}:{{.VERSION}}
+    - echo "Docker image pushed - {{.DOCKER_IMAGE_NAME}}:{{.VERSION}}"
+
+  clean:
+    desc: Remove Docker image
+    silent: true
+    cmds:
+    - docker rmi {{.DOCKER_IMAGE_NAME}}:{{.VERSION}} 2>/dev/null || echo "Image not found - {{.DOCKER_IMAGE_NAME}}:{{.VERSION}}"
+    - echo "Docker image cleanup completed"
+
+  clean:all:
+    desc: Remove all unused Docker images, containers, and networks
+    silent: true
+    cmds:
+    - docker system prune -f
+    - echo "Docker system cleanup completed"
+
+  logs:
+    desc: Show logs from running container
+    silent: true
+    cmds:
+    - docker logs $(docker ps -q --filter ancestor={{.DOCKER_IMAGE_NAME}}:{{.VERSION}}) 2>/dev/null || echo "No running containers found"
+
+  stop:
+    desc: Stop running container
+    silent: true
+    cmds:
+    - docker stop $(docker ps -q --filter ancestor={{.DOCKER_IMAGE_NAME}}:{{.VERSION}}) 2>/dev/null || echo "No running containers found"
+    - echo "Container stopped" 
