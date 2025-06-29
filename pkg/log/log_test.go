@@ -293,109 +293,91 @@ func BenchmarkMulti(b *testing.B) {
 }
 
 func TestParseLogLevel(t *testing.T) {
-	// Test parseLogLevel indirectly through logger creation
-	tests := []struct {
-		input       string
-		expectDebug bool
+	testCases := []struct {
+		input    string
+		expected Level
 	}{
-		{"debug", true},
-		{"info", false},
-		{"warn", false},
-		{"error", false},
-		{"fatal", false},
-		{"panic", false},
-		{"invalid", false}, // should default to info
-		{"", false},        // should default to info
-		{"DEBUG", false},   // case sensitive, should default to info
+		{"debug", DebugLevel},
+		{"info", InfoLevel},
+		{"warn", WarnLevel},
+		{"error", ErrorLevel},
+		{"fatal", FatalLevel},
+		{"panic", PanicLevel},
+		{"invalid", InfoLevel},
+		{"", InfoLevel},
 	}
 
-	for _, test := range tests {
-		t.Run(test.input, func(t *testing.T) {
-			var buf bytes.Buffer
-			logger := NewConsoleLoggerWithWriter(LogLevel(test.input), &buf, false)
-
-			// Send debug message and check if it appears (only if debug level is enabled)
-			logger.Debug("debug test message")
-
-			hasOutput := buf.Len() > 0
-			if test.expectDebug != hasOutput {
-				t.Errorf("LogLevel(%s): expected debug output=%v, got output=%v",
-					test.input, test.expectDebug, hasOutput)
+	for _, tc := range testCases {
+		t.Run(tc.input, func(t *testing.T) {
+			result := parseLevel(tc.input)
+			if result != tc.expected {
+				t.Errorf("Expected level %s, but got %s", tc.expected, result)
 			}
 		})
 	}
 }
 
 func TestFileLoggerDebug(t *testing.T) {
-	logFile := "test_debug.log"
-	defer os.Remove(logFile)
+	logFile := "test_file_debug.log"
+	defer os.Remove(logFile) // Clean up
 
 	config := &FileLoggerConfig{
 		Filename:   logFile,
-		MaxSize:    1,
-		MaxBackups: 1,
-		MaxAge:     1,
-		Compress:   false,
 		JsonFormat: true,
 	}
 
 	logger := NewFileLogger(DebugLevel, config)
-	logger.Debug("Debug message for file logger", String("level", "debug"))
+	logger.Debug("this should be logged")
+	logger.Info("this should also be logged")
 
-	// Verify file was created
-	if _, err := os.Stat(logFile); os.IsNotExist(err) {
-		t.Error("Log file was not created for debug message")
+	// Verify file was created and has content
+	content, err := os.ReadFile(logFile)
+	if err != nil {
+		t.Fatal("Could not read log file")
+	}
+	if len(content) == 0 {
+		t.Error("Log file is empty")
 	}
 }
 
 func TestFileLoggerClose(t *testing.T) {
-	logFile := "test_close.log"
+	logFile := "test_file_close.log"
 	defer os.Remove(logFile)
 
-	config := &FileLoggerConfig{
-		Filename:   logFile,
-		MaxSize:    1,
-		MaxBackups: 1,
-		MaxAge:     1,
-		Compress:   false,
-		JsonFormat: true,
-	}
-
+	config := &FileLoggerConfig{Filename: logFile}
 	logger := NewFileLogger(InfoLevel, config)
 
-	// Cast to *FileLogger to access Close method
-	if fileLogger, ok := logger.(*FileLogger); ok {
-		err := fileLogger.Close()
-		if err != nil {
-			t.Errorf("Failed to close file logger: %v", err)
-		}
-	} else {
-		t.Error("Failed to cast logger to FileLogger")
+	// Cast to FileLogger to access Close method
+	fileLogger, ok := logger.(*FileLogger)
+	if !ok {
+		t.Fatal("Could not cast to *FileLogger")
+	}
+
+	err := fileLogger.Close()
+	if err != nil {
+		t.Errorf("Error closing file logger: %v", err)
 	}
 }
 
 func TestMultiLoggerDebug(t *testing.T) {
-	var buf bytes.Buffer
-	consoleLogger := NewConsoleLoggerWithWriter(DebugLevel, &buf, false)
+	var consoleBuf bytes.Buffer
+	consoleLogger := NewConsoleLoggerWithWriter(DebugLevel, &consoleBuf, false)
 
 	logFile := "test_multi_debug.log"
 	defer os.Remove(logFile)
-
-	fileLogger := NewFileLogger(DebugLevel, &FileLoggerConfig{
-		Filename:   logFile,
-		MaxSize:    1,
-		MaxBackups: 1,
-		MaxAge:     1,
-		Compress:   false,
-		JsonFormat: true,
-	})
+	fileLogger := NewFileLogger(DebugLevel, &FileLoggerConfig{Filename: logFile})
 
 	multiLogger := NewMultiLogger(consoleLogger, fileLogger)
-	multiLogger.Debug("Debug message via multi logger")
+	multiLogger.Debug("multi-logger debug message")
 
 	// Verify console output
-	if buf.Len() == 0 {
-		t.Error("Nothing was written to console buffer for debug")
+	if consoleBuf.Len() == 0 {
+		t.Error("Multi-logger did not write to console")
+	}
+
+	// Verify file output
+	if _, err := os.Stat(logFile); os.IsNotExist(err) {
+		t.Error("Multi-logger did not create log file")
 	}
 }
 
@@ -403,15 +385,12 @@ func TestLoggerWithEmptyFields(t *testing.T) {
 	var buf bytes.Buffer
 	logger := NewConsoleLoggerWithWriter(InfoLevel, &buf, false)
 
-	// Test with no fields
-	logger.Info("Message with no fields")
+	// Test that no panic occurs with empty fields
+	logger.WithFields().Info("Test with empty fields")
+	logger.Info("Test with no fields")
 
-	// Test with empty fields slice
-	logger.Info("Message with empty fields", []Field{}...)
-
-	output := buf.String()
-	if output == "" {
-		t.Error("No output generated for empty fields")
+	if buf.Len() == 0 {
+		t.Error("No output with empty fields")
 	}
 }
 
@@ -419,21 +398,41 @@ func TestNewFileLoggerDefaults(t *testing.T) {
 	logFile := "test_defaults.log"
 	defer os.Remove(logFile)
 
-	// Test with empty config to trigger defaults
-	config := &FileLoggerConfig{
-		Filename: logFile,
-		// Leave other fields empty to test defaults
-	}
-
+	// Test with empty config to check defaults
+	config := &FileLoggerConfig{Filename: logFile}
 	logger := NewFileLogger(InfoLevel, config)
-	if logger == nil {
-		t.Fatal("File logger with defaults should not be nil")
+
+	// Cast to get access to internal config
+	fileLogger, ok := logger.(*FileLogger)
+	if !ok {
+		t.Fatal("Could not cast to *FileLogger")
 	}
 
-	logger.Info("Testing defaults")
-
-	// Verify file was created
-	if _, err := os.Stat(logFile); os.IsNotExist(err) {
-		t.Error("Log file was not created with defaults")
+	if fileLogger.config.MaxSize != 100 {
+		t.Errorf("Expected default MaxSize=100, got %d", fileLogger.config.MaxSize)
 	}
+	if fileLogger.config.MaxBackups != 3 {
+		t.Errorf("Expected default MaxBackups=3, got %d", fileLogger.config.MaxBackups)
+	}
+	if fileLogger.config.MaxAge != 7 {
+		t.Errorf("Expected default MaxAge=7, got %d", fileLogger.config.MaxAge)
+	}
+}
+
+// Simple mock logger for testing
+type mockLogger struct {
+	level Level
+}
+
+func (m *mockLogger) Debug(msg string, fields ...Field) {}
+func (m *mockLogger) Info(msg string, fields ...Field)  {}
+func (m *mockLogger) Warn(msg string, fields ...Field)  {}
+func (m *mockLogger) Error(msg string, fields ...Field) {}
+func (m *mockLogger) Fatal(msg string, fields ...Field) {}
+func (m *mockLogger) Panic(msg string, fields ...Field) {}
+func (m *mockLogger) WithFields(fields ...Field) Logger {
+	return m
+}
+func (m *mockLogger) WithContext(ctx context.Context) Logger {
+	return m
 }

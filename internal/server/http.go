@@ -3,8 +3,8 @@ package server
 import (
 	"github.com/MayukhSobo/scaffold/internal/handler"
 	"github.com/MayukhSobo/scaffold/internal/middleware"
-	resp "github.com/MayukhSobo/scaffold/pkg/helper"
 	"github.com/MayukhSobo/scaffold/pkg/log"
+	"github.com/MayukhSobo/scaffold/pkg/utils"
 
 	"github.com/gin-gonic/gin"
 )
@@ -20,7 +20,7 @@ func NewServerHTTP(
 	)
 	r.GET("/", func(ctx *gin.Context) {
 		logger.Info("Root endpoint called")
-		resp.HandleSuccess(ctx, map[string]any{
+		utils.HandleSuccess(ctx, map[string]any{
 			"say": "Hi Nunu!",
 		})
 	})

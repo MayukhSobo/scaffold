@@ -2,33 +2,66 @@ package log
 
 import (
 	"context"
+	"path/filepath"
 	"time"
 
+	"github.com/MayukhSobo/scaffold/pkg/utils"
 	"github.com/rs/zerolog"
+	"github.com/spf13/viper"
 	"gopkg.in/natefinch/lumberjack.v2"
 )
 
-// FileLoggerConfig contains configuration for file logging with rotation
+// FileLoggerConfig contains configuration for file logging with rotation.
 type FileLoggerConfig struct {
-	Filename   string
-	MaxSize    int  // megabytes
-	MaxBackups int  // number of backups
-	MaxAge     int  // days
-	Compress   bool // compress rotated files
-	JsonFormat bool // use JSON format
+	Filename   string `mapstructure:"filename"`
+	Directory  string `mapstructure:"directory"`
+	MaxSize    int    `mapstructure:"max_size"`    // megabytes
+	MaxBackups int    `mapstructure:"max_backups"` // number of backups
+	MaxAge     int    `mapstructure:"max_age"`     // days
+	Compress   bool   `mapstructure:"compress"`    // compress rotated files
+	JsonFormat bool   `mapstructure:"json_format"` // use JSON format
 }
 
-// FileLogger implements Logger interface for file output with rotation
+// FileLogger implements Logger interface for file output with rotation.
 type FileLogger struct {
 	logger      zerolog.Logger
-	level       LogLevel
+	level       Level
 	contextData map[string]any
 	lumberjack  *lumberjack.Logger
 	config      *FileLoggerConfig
 }
 
-// NewFileLogger creates a new file logger with rotation
-func NewFileLogger(level LogLevel, config *FileLoggerConfig) Logger {
+func init() {
+	RegisterFactory("file", NewFileLoggerFromConfig)
+}
+
+// NewFileLoggerFromConfig creates a new file logger from a Viper configuration.
+func NewFileLoggerFromConfig(level Level, v *viper.Viper) (Logger, error) {
+	var config FileLoggerConfig
+	if err := v.Unmarshal(&config); err != nil {
+		return nil, err
+	}
+
+	fullPath := utils.ResolveLogFilePath(config.Directory, config.Filename)
+	if err := utils.EnsureLogDirectory(filepath.Dir(fullPath)); err != nil {
+		return nil, err
+	}
+
+	// The existing NewFileLogger expects a config with the full path.
+	fileLoggerConfig := &FileLoggerConfig{
+		Filename:   fullPath,
+		MaxSize:    config.MaxSize,
+		MaxBackups: config.MaxBackups,
+		MaxAge:     config.MaxAge,
+		Compress:   config.Compress,
+		JsonFormat: config.JsonFormat,
+	}
+
+	return NewFileLogger(level, fileLoggerConfig), nil
+}
+
+// NewFileLogger creates a new file logger with rotation.
+func NewFileLogger(level Level, config *FileLoggerConfig) Logger {
 	// Set defaults if not provided
 	if config.MaxSize == 0 {
 		config.MaxSize = 100 // 100MB
@@ -68,7 +101,7 @@ func NewFileLogger(level LogLevel, config *FileLoggerConfig) Logger {
 	}
 }
 
-// addFields adds fields to the zerolog event
+// addFields adds fields to the zerolog event.
 func (l *FileLogger) addFields(event *zerolog.Event, fields []Field) *zerolog.Event {
 	// Add context data first
 	for k, v := range l.contextData {
@@ -82,43 +115,43 @@ func (l *FileLogger) addFields(event *zerolog.Event, fields []Field) *zerolog.Ev
 	return event
 }
 
-// Debug logs a debug message
+// Debug logs a debug message.
 func (l *FileLogger) Debug(msg string, fields ...Field) {
 	event := l.logger.Debug()
 	l.addFields(event, fields).Msg(msg)
 }
 
-// Info logs an info message
+// Info logs an info message.
 func (l *FileLogger) Info(msg string, fields ...Field) {
 	event := l.logger.Info()
 	l.addFields(event, fields).Msg(msg)
 }
 
-// Warn logs a warning message
+// Warn logs a warning message.
 func (l *FileLogger) Warn(msg string, fields ...Field) {
 	event := l.logger.Warn()
 	l.addFields(event, fields).Msg(msg)
 }
 
-// Error logs an error message
+// Error logs an error message.
 func (l *FileLogger) Error(msg string, fields ...Field) {
 	event := l.logger.Error()
 	l.addFields(event, fields).Msg(msg)
 }
 
-// Fatal logs a fatal message and exits
+// Fatal logs a fatal message and exits.
 func (l *FileLogger) Fatal(msg string, fields ...Field) {
 	event := l.logger.Fatal()
 	l.addFields(event, fields).Msg(msg)
 }
 
-// Panic logs a panic message and panics
+// Panic logs a panic message and panics.
 func (l *FileLogger) Panic(msg string, fields ...Field) {
 	event := l.logger.Panic()
 	l.addFields(event, fields).Msg(msg)
 }
 
-// WithFields creates a new logger with additional context fields
+// WithFields creates a new logger with additional context fields.
 func (l *FileLogger) WithFields(fields ...Field) Logger {
 	newContextData := make(map[string]any)
 
@@ -141,7 +174,7 @@ func (l *FileLogger) WithFields(fields ...Field) Logger {
 	}
 }
 
-// WithContext creates a new logger with context
+// WithContext creates a new logger with context.
 func (l *FileLogger) WithContext(ctx context.Context) Logger {
 	// For now, just return a copy. This can be extended for request tracing
 	return &FileLogger{
@@ -153,7 +186,7 @@ func (l *FileLogger) WithContext(ctx context.Context) Logger {
 	}
 }
 
-// Close closes the file logger and flushes any remaining logs
+// Close closes the file logger and flushes any remaining logs.
 func (l *FileLogger) Close() error {
 	return l.lumberjack.Close()
 }

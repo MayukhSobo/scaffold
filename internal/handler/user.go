@@ -2,9 +2,10 @@ package handler
 
 import (
 	"net/http"
+
 	"github.com/MayukhSobo/scaffold/internal/service"
-	resp "github.com/MayukhSobo/scaffold/pkg/helper"
 	"github.com/MayukhSobo/scaffold/pkg/log"
+	"github.com/MayukhSobo/scaffold/pkg/utils"
 
 	"github.com/gin-gonic/gin"
 )
@@ -28,7 +29,7 @@ func (h *UserHandler) GetUserById(ctx *gin.Context) {
 		Id int64 `form:"id" binding:"required"`
 	}
 	if err := ctx.ShouldBind(&params); err != nil {
-		resp.HandleError(ctx, http.StatusBadRequest, 1, err.Error(), nil)
+		utils.HandleError(ctx, http.StatusBadRequest, 1, err.Error(), nil)
 		return
 	}
 
@@ -39,13 +40,13 @@ func (h *UserHandler) GetUserById(ctx *gin.Context) {
 
 	if err != nil {
 		h.GetLogger().Error("Failed to get user", log.Error(err), log.Int64("user_id", params.Id))
-		resp.HandleError(ctx, http.StatusInternalServerError, 1, err.Error(), nil)
+		utils.HandleError(ctx, http.StatusInternalServerError, 1, err.Error(), nil)
 		return
 	}
-	resp.HandleSuccess(ctx, user)
+	utils.HandleSuccess(ctx, user)
 }
 
 func (h *UserHandler) UpdateUser(ctx *gin.Context) {
 	h.GetLogger().Info("UpdateUser called")
-	resp.HandleSuccess(ctx, nil)
+	utils.HandleSuccess(ctx, nil)
 }

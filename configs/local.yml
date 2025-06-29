@@ -18,19 +18,22 @@ data:
     write_timeout: 0.2s
 log:
   level: "debug"
-  console_logger:
-    enabled: true
-    colors: true
-    json_format: false
-  file_logger:
-    enabled: false # Disabled for local development (console is enough)
-    directory: "logs" # Directory where log files will be created
-    filename: "app.log" # Log file name
-    json_format: true # Use JSON format for file logs
-    max_size: 100
-    max_backups: 3
-    max_age: 7
-    compress: true
+  loggers:
+    console:
+      driver: "console"
+      enabled: true
+      colors: true
+      json_format: false
+    file:
+      driver: "file"
+      enabled: true
+      directory: "logs"
+      filename: "app.log"
+      json_format: true
+      max_size: 100
+      max_backups: 3
+      max_age: 7
+      compress: true
   # Future loggers can be easily added:
   # datadog_logger:
   #   enabled: false

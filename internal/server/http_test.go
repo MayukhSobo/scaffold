@@ -4,25 +4,34 @@ import (
 	"bytes"
 	"net/http"
 	"net/http/httptest"
-	"github.com/MayukhSobo/scaffold/internal/handler"
-	"github.com/MayukhSobo/scaffold/pkg/log"
 	"testing"
+
+	"github.com/MayukhSobo/scaffold/internal/handler"
+	"github.com/MayukhSobo/scaffold/internal/service"
+	"github.com/MayukhSobo/scaffold/pkg/log"
 
 	"github.com/gin-gonic/gin"
 )
 
-func TestNewServerHTTP(t *testing.T) {
+// setupTestServer initializes a test server with mock dependencies.
+func setupTestServer() (*gin.Engine, *bytes.Buffer) {
 	gin.SetMode(gin.TestMode)
-
-	// Create test dependencies
 	var buf bytes.Buffer
 	logger := log.NewConsoleLoggerWithWriter(log.InfoLevel, &buf, false)
 
+	// Create mock service
+	mockUserService := &service.MockUserService{}
+
+	// Create handlers with mock dependencies
 	baseHandler := handler.NewHandler(logger)
-	userHandler := &handler.UserHandler{Handler: baseHandler}
+	userHandler := handler.NewUserHandler(baseHandler, mockUserService)
 
 	engine := NewServerHTTP(logger, userHandler)
+	return engine, &buf
+}
 
+func TestNewServerHTTP(t *testing.T) {
+	engine, _ := setupTestServer()
 	if engine == nil {
 		t.Error("NewServerHTTP() returned nil")
 	}
@@ -35,16 +44,7 @@ func TestNewServerHTTP(t *testing.T) {
 }
 
 func TestServerHTTPRootEndpoint(t *testing.T) {
-	gin.SetMode(gin.TestMode)
-
-	// Create test dependencies
-	var buf bytes.Buffer
-	logger := log.NewConsoleLoggerWithWriter(log.InfoLevel, &buf, false)
-
-	baseHandler := handler.NewHandler(logger)
-	userHandler := &handler.UserHandler{Handler: baseHandler}
-
-	engine := NewServerHTTP(logger, userHandler)
+	engine, buf := setupTestServer()
 
 	// Test root endpoint
 	w := httptest.NewRecorder()
@@ -63,16 +63,7 @@ func TestServerHTTPRootEndpoint(t *testing.T) {
 }
 
 func TestServerHTTPUserEndpoint(t *testing.T) {
-	gin.SetMode(gin.TestMode)
-
-	// Create test dependencies
-	var buf bytes.Buffer
-	logger := log.NewConsoleLoggerWithWriter(log.InfoLevel, &buf, false)
-
-	baseHandler := handler.NewHandler(logger)
-	userHandler := &handler.UserHandler{Handler: baseHandler}
-
-	engine := NewServerHTTP(logger, userHandler)
+	engine, _ := setupTestServer()
 
 	// Test user endpoint (should fail validation but endpoint should exist)
 	w := httptest.NewRecorder()
@@ -87,16 +78,7 @@ func TestServerHTTPUserEndpoint(t *testing.T) {
 }
 
 func TestServerHTTPWithValidUserID(t *testing.T) {
-	gin.SetMode(gin.TestMode)
-
-	// Create test dependencies
-	var buf bytes.Buffer
-	logger := log.NewConsoleLoggerWithWriter(log.InfoLevel, &buf, false)
-
-	baseHandler := handler.NewHandler(logger)
-	userHandler := &handler.UserHandler{Handler: baseHandler}
-
-	engine := NewServerHTTP(logger, userHandler)
+	engine, _ := setupTestServer()
 
 	// Test user endpoint with valid ID
 	w := httptest.NewRecorder()
@@ -112,16 +94,7 @@ func TestServerHTTPWithValidUserID(t *testing.T) {
 
 func TestServerHTTPGinMode(t *testing.T) {
 	// Test that server sets gin to release mode
-	gin.SetMode(gin.TestMode) // Reset to test mode
-
-	var buf bytes.Buffer
-	logger := log.NewConsoleLoggerWithWriter(log.InfoLevel, &buf, false)
-
-	baseHandler := handler.NewHandler(logger)
-	userHandler := &handler.UserHandler{Handler: baseHandler}
-
-	// This should set gin to release mode
-	engine := NewServerHTTP(logger, userHandler)
+	engine, _ := setupTestServer()
 
 	if engine == nil {
 		t.Error("Engine should not be nil")
@@ -133,15 +106,7 @@ func TestServerHTTPGinMode(t *testing.T) {
 }
 
 func TestServerHTTPRouteSetup(t *testing.T) {
-	gin.SetMode(gin.TestMode)
-
-	var buf bytes.Buffer
-	logger := log.NewConsoleLoggerWithWriter(log.InfoLevel, &buf, false)
-
-	baseHandler := handler.NewHandler(logger)
-	userHandler := &handler.UserHandler{Handler: baseHandler}
-
-	engine := NewServerHTTP(logger, userHandler)
+	engine, _ := setupTestServer()
 
 	// Test that routes are properly configured by testing different paths
 	testCases := []struct {
@@ -150,7 +115,7 @@ func TestServerHTTPRouteSetup(t *testing.T) {
 		expectedStatus int
 	}{
 		{"GET", "/", http.StatusOK},
-		{"GET", "/user?id=1", http.StatusInternalServerError}, // Mock service will return error
+		{"GET", "/user?id=1", http.StatusOK}, // Mock service will now return success
 		{"GET", "/nonexistent", http.StatusNotFound},
 		{"POST", "/user", http.StatusNotFound}, // POST not configured for /user
 	}

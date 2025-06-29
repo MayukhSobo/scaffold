@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+
 	"github.com/MayukhSobo/scaffold/pkg/config"
 	"github.com/MayukhSobo/scaffold/pkg/log"
 
@@ -17,7 +18,11 @@ func init() {
 	// Display startup banner
 	fmt.Println(DisplayBanner())
 	conf = config.NewConfig()
-	logger = config.CreateLoggerFromConfig(conf)
+	var err error
+	logger, err = log.CreateLoggerFromConfig(conf)
+	if err != nil {
+		panic(fmt.Sprintf("failed to create logger: %v", err))
+	}
 }
 
 func main() {

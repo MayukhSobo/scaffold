@@ -7,23 +7,48 @@ import (
 	"time"
 
 	"github.com/rs/zerolog"
+	"github.com/spf13/viper"
 )
 
-// ConsoleLogger implements Logger interface for console output
+// ConsoleLoggerConfig defines the configuration for the console logger.
+type ConsoleLoggerConfig struct {
+	Colors     bool `mapstructure:"colors"`
+	JsonFormat bool `mapstructure:"json_format"`
+}
+
+// ConsoleLogger implements Logger interface for console output.
 type ConsoleLogger struct {
 	logger      zerolog.Logger
-	level       LogLevel
+	level       Level
 	contextData map[string]any
 	writer      io.Writer
 }
 
-// NewConsoleLogger creates a new console logger with specified level
-func NewConsoleLogger(level LogLevel) Logger {
+func init() {
+	RegisterFactory("console", NewConsoleLoggerFromConfig)
+}
+
+// NewConsoleLoggerFromConfig creates a new console logger from a Viper configuration.
+func NewConsoleLoggerFromConfig(level Level, v *viper.Viper) (Logger, error) {
+	var config ConsoleLoggerConfig
+	if err := v.Unmarshal(&config); err != nil {
+		return nil, err
+	}
+
+	if config.JsonFormat {
+		return NewConsoleLoggerWithWriter(level, os.Stdout, false), nil
+	}
+
+	return NewConsoleLoggerWithWriter(level, os.Stdout, config.Colors), nil
+}
+
+// NewConsoleLogger creates a new console logger with specified level.
+func NewConsoleLogger(level Level) Logger {
 	return NewConsoleLoggerWithWriter(level, os.Stdout, true)
 }
 
-// NewConsoleLoggerWithWriter creates a console logger with custom writer and colorization
-func NewConsoleLoggerWithWriter(level LogLevel, writer io.Writer, colorized bool) Logger {
+// NewConsoleLoggerWithWriter creates a console logger with custom writer and colorization.
+func NewConsoleLoggerWithWriter(level Level, writer io.Writer, colorized bool) Logger {
 	// Configure zerolog
 	zerolog.TimeFieldFormat = time.RFC3339Nano
 	zerolog.SetGlobalLevel(parseLogLevel(string(level)))
@@ -43,7 +68,7 @@ func NewConsoleLoggerWithWriter(level LogLevel, writer io.Writer, colorized bool
 	}
 }
 
-// parseLogLevel converts string to zerolog level
+// parseLogLevel converts string to zerolog level.
 func parseLogLevel(level string) zerolog.Level {
 	switch level {
 	case "debug":
@@ -63,7 +88,7 @@ func parseLogLevel(level string) zerolog.Level {
 	}
 }
 
-// addFields adds fields to the zerolog event
+// addFields adds fields to the zerolog event.
 func (l *ConsoleLogger) addFields(event *zerolog.Event, fields []Field) *zerolog.Event {
 	// Add context data first
 	for k, v := range l.contextData {
@@ -77,43 +102,43 @@ func (l *ConsoleLogger) addFields(event *zerolog.Event, fields []Field) *zerolog
 	return event
 }
 
-// Debug logs a debug message
+// Debug logs a debug message.
 func (l *ConsoleLogger) Debug(msg string, fields ...Field) {
 	event := l.logger.Debug()
 	l.addFields(event, fields).Msg(msg)
 }
 
-// Info logs an info message
+// Info logs an info message.
 func (l *ConsoleLogger) Info(msg string, fields ...Field) {
 	event := l.logger.Info()
 	l.addFields(event, fields).Msg(msg)
 }
 
-// Warn logs a warning message
+// Warn logs a warning message.
 func (l *ConsoleLogger) Warn(msg string, fields ...Field) {
 	event := l.logger.Warn()
 	l.addFields(event, fields).Msg(msg)
 }
 
-// Error logs an error message
+// Error logs an error message.
 func (l *ConsoleLogger) Error(msg string, fields ...Field) {
 	event := l.logger.Error()
 	l.addFields(event, fields).Msg(msg)
 }
 
-// Fatal logs a fatal message and exits
+// Fatal logs a fatal message and exits.
 func (l *ConsoleLogger) Fatal(msg string, fields ...Field) {
 	event := l.logger.Fatal()
 	l.addFields(event, fields).Msg(msg)
 }
 
-// Panic logs a panic message and panics
+// Panic logs a panic message and panics.
 func (l *ConsoleLogger) Panic(msg string, fields ...Field) {
 	event := l.logger.Panic()
 	l.addFields(event, fields).Msg(msg)
 }
 
-// WithFields creates a new logger with additional context fields
+// WithFields creates a new logger with additional context fields.
 func (l *ConsoleLogger) WithFields(fields ...Field) Logger {
 	newContextData := make(map[string]any)
 
@@ -135,7 +160,7 @@ func (l *ConsoleLogger) WithFields(fields ...Field) Logger {
 	}
 }
 
-// WithContext creates a new logger with context (for future use with request tracing)
+// WithContext creates a new logger with context (for future use with request tracing).
 func (l *ConsoleLogger) WithContext(ctx context.Context) Logger {
 	// For now, just return a copy. This can be extended for request tracing
 	return &ConsoleLogger{

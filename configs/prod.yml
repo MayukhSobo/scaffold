@@ -19,16 +19,19 @@ data:
 
 log:
   level: "info"
-  console_logger:
-    enabled: false
-    colors: false
-    json_format: true
-  file_logger:
-    enabled: true
-    directory: "/var/log/scaffold"
-    filename: "app.log"
-    json_format: true
-    max_size: 100
-    max_backups: 5
-    max_age: 30
-    compress: true
+  loggers:
+    console:
+      driver: "console"
+      enabled: false
+      colors: false
+      json_format: true
+    file:
+      driver: "file"
+      enabled: true
+      directory: "/var/log/scaffold"
+      filename: "app.log"
+      json_format: true
+      max_size: 100
+      max_backups: 5
+      max_age: 30
+      compress: true

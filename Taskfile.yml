@@ -131,6 +131,7 @@ tasks:
   dev:
     desc: Run the application in development mode with hot reload
     silent: true
+    deps: [ "build" ]
     cmds:
     - |
       if ! command -v air &> /dev/null; then
