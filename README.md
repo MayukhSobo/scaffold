@@ -9,7 +9,7 @@
 [![Go Version](https://img.shields.io/badge/go-1.22+-blue.svg)](https://golang.org/dl/)
 [![Build Status](https://img.shields.io/badge/build-passing-brightgreen.svg)](https://github.com/MayukhSobo/scaffold)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![Code Quality](https://img.shields.io/goreportcard/github/MayukhSobo/scaffold)](https://goreportcard.com/report/github.com/MayukhSobo/scaffold)
+[![Go Report Card](https://goreportcard.com/badge/github.com/MayukhSobo/scaffold)](https://goreportcard.com/report/github.com/MayukhSobo/scaffold)
 [![Last Commit](https://img.shields.io/github/last-commit/MayukhSobo/scaffold.svg)](https://github.com/MayukhSobo/scaffold/commits/main)
 
 A production-ready Go application boilerplate, engineered for performance, developer efficiency, and robust tooling. Featuring a powerful build system with Task, advanced testing & coverage, hot-reloading, and optimized cross-platform builds.
