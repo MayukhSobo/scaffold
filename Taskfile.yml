@@ -1,4 +1,4 @@
-version: '3'
+version: "3"
 
 vars:
   APP_NAME: Scaffold
@@ -28,8 +28,8 @@ vars:
 
 env:
   CGO_ENABLED: 1
-  GOOS: '{{OS}}'
-  GOARCH: '{{ARCH}}'
+  GOOS: "{{OS}}"
+  GOARCH: "{{ARCH}}"
 
 tasks:
   default:
