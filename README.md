@@ -41,7 +41,7 @@ A production-ready Go application boilerplate, engineered for performance, devel
 ## 🏗️ Project Structure
 
 ```
-golang-di/
+scaffold/
 ├── build/                   # Build artifacts (binaries)
 ├── cmd/
 │   └── server/              # Main application entrypoint
@@ -80,8 +80,8 @@ golang-di/
 
 1.  **Clone the repository:**
     ```bash
-    git clone https://github.com/thedatageek/golang-di.git
-    cd golang-di
+    git clone https://github.com/thedatageek/scaffold.git
+    cd scaffold
     ```
 
 2.  **Install dependencies:**
