@@ -10,7 +10,7 @@
 [![Build Status](https://img.shields.io/badge/build-passing-brightgreen.svg)](https://github.com/thedatageek/golang-di)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Code Quality](https://img.shields.io/badge/quality-A+-brightgreen.svg)](https://goreportcard.com/report/github.com/thedatageek/golang-di)
-[![Last Commit](https://img.shields.io/github/last-commit/thedatageek/golang-di.svg)](https://github.com/thedatageek/scaffold/commits/main)
+[![Last Commit](https://img.shields.io/github/last-commit/thedatageek/golang-di.svg)](https://github.com/MayukhSobo/scaffold/commits/main)
 
 A production-ready Go application boilerplate, engineered for performance, developer efficiency, and robust tooling. Featuring a powerful build system with Task, advanced testing & coverage, hot-reloading, and optimized cross-platform builds.
 
