@@ -1,0 +1,26 @@
+version: "3"
+
+tasks:
+  # Development tasks
+  run:
+    desc: Run the application with local config
+    silent: true
+    cmds:
+    - go run ./{{.CMD_DIR}} --config={{.CONFIG_DIR}}/local.yml
+
+  run:prod:
+    desc: Run the application with production config
+    silent: true
+    cmds:
+    - go run ./{{.CMD_DIR}} --config={{.CONFIG_DIR}}/prod.yml
+
+  dev:
+    desc: Run the application in development mode with hot reload
+    silent: true
+    cmds:
+    - |
+      if ! command -v air &> /dev/null; then
+        echo "Installing air..."
+        go install github.com/air-verse/air@latest
+      fi
+    - air 

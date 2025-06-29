@@ -1,0 +1,81 @@
+version: "3"
+
+tasks:
+  # Build tasks
+  build:
+    desc: Build development binary with debug symbols and race detection
+    silent: true
+    cmds:
+    - rm -rf {{.BUILD_DIR}}/debug
+    - mkdir -p {{.BUILD_DIR}}/debug
+    - go build -race -gcflags="all=-N -l" -ldflags="-X main.version={{.VERSION}}-dev -X main.buildTime={{.BUILD_TIME}}" -o {{.BUILD_DIR}}/debug/{{.BINARY_DEBUG}} ./{{.CMD_DIR}}
+    - echo "Development binary built at {{.BUILD_DIR}}/debug/{{.BINARY_DEBUG}}"
+    - echo "  Debug symbols - YES (included)"
+    - echo "  Race detection - YES (enabled)"
+    - echo "  Optimization - NO (disabled for debugging)"
+    - echo "  Size - LARGE (includes debug info)"
+    generates:
+    - "{{.BUILD_DIR}}/debug/{{.BINARY_DEBUG}}"
+
+  build:release:linux:
+    desc: Build release binary for Linux
+    silent: true
+    env:
+      CGO_ENABLED: 0
+      GOOS: linux
+      GOARCH: amd64
+    cmds:
+    - mkdir -p {{.BUILD_DIR}}/linux
+    - go build -a -trimpath -ldflags="-s -w -X main.version={{.VERSION}} -X main.buildTime={{.BUILD_TIME}}" -installsuffix=netgo -o {{.BUILD_DIR}}/linux/{{.BINARY_LINUX}} ./{{.CMD_DIR}}
+    - |
+      if command -v upx &> /dev/null; then
+        echo "Compressing Linux binary with UPX..."
+        upx --best --lzma {{.BUILD_DIR}}/linux/{{.BINARY_LINUX}} 2>/dev/null || upx --best {{.BUILD_DIR}}/linux/{{.BINARY_LINUX}} 2>/dev/null || echo "UPX compression skipped"
+      fi
+    - echo "Linux release binary built at {{.BUILD_DIR}}/linux/{{.BINARY_LINUX}}"
+    generates:
+    - "{{.BUILD_DIR}}/linux/{{.BINARY_LINUX}}"
+
+  build:release:darwin:
+    desc: Build release binary for macOS
+    silent: true
+    env:
+      GOOS: darwin
+      GOARCH: amd64
+    cmds:
+    - mkdir -p {{.BUILD_DIR}}/darwin
+    - go build -a -trimpath -ldflags="-s -w -X main.version={{.VERSION}} -X main.buildTime={{.BUILD_TIME}}" -o {{.BUILD_DIR}}/darwin/{{.BINARY_DARWIN}} ./{{.CMD_DIR}}
+    - |
+      if command -v upx &> /dev/null; then
+        echo "Compressing macOS binary with UPX..."
+        upx --best --lzma --force-macos {{.BUILD_DIR}}/darwin/{{.BINARY_DARWIN}} 2>/dev/null || upx --best {{.BUILD_DIR}}/darwin/{{.BINARY_DARWIN}} 2>/dev/null || echo "UPX compression skipped"
+      fi
+    - echo "macOS release binary built at {{.BUILD_DIR}}/darwin/{{.BINARY_DARWIN}}"
+    generates:
+    - "{{.BUILD_DIR}}/darwin/{{.BINARY_DARWIN}}"
+
+  build:release:windows:
+    desc: Build release binary for Windows
+    silent: true
+    env:
+      CGO_ENABLED: 0
+      GOOS: windows
+      GOARCH: amd64
+    cmds:
+    - mkdir -p {{.BUILD_DIR}}/windows
+    - go build -a -trimpath -ldflags="-s -w -X main.version={{.VERSION}} -X main.buildTime={{.BUILD_TIME}}" -installsuffix=netgo -o {{.BUILD_DIR}}/windows/{{.BINARY_WINDOWS}} ./{{.CMD_DIR}}
+    - |
+      if command -v upx &> /dev/null; then
+        echo "Compressing Windows binary with UPX..."
+        upx --best --lzma {{.BUILD_DIR}}/windows/{{.BINARY_WINDOWS}} 2>/dev/null || upx --best {{.BUILD_DIR}}/windows/{{.BINARY_WINDOWS}} 2>/dev/null || echo "UPX compression skipped"
+      fi
+    - echo "Windows release binary built at {{.BUILD_DIR}}/windows/{{.BINARY_WINDOWS}}"
+    generates:
+    - "{{.BUILD_DIR}}/windows/{{.BINARY_WINDOWS}}"
+
+  build:release:all:
+    desc: Build release binaries for all platforms
+    silent: true
+    deps: [ build:release:linux, build:release:darwin, build:release:windows ]
+    cmds:
+    - echo "All release binaries built successfully" 

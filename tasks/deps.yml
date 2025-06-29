@@ -1,0 +1,27 @@
+version: "3"
+
+tasks:
+  # Dependency management
+  deps:
+    desc: Download and install dependencies
+    silent: true
+    cmds:
+    - go mod download
+    - go mod tidy
+    - echo "Dependencies updated"
+
+  deps:install:
+    desc: Install/update dependencies
+    silent: true
+    cmds:
+    - go mod download
+    - go mod tidy
+    - echo "Dependencies installed"
+
+  deps:update:
+    desc: Update all dependencies
+    silent: true
+    cmds:
+    - go get -u ./...
+    - go mod tidy
+    - echo "Dependencies updated to latest versions" 

@@ -1,0 +1,50 @@
+version: "3"
+
+tasks:
+  # Utility tasks
+  clean:
+    desc: Clean all build artifacts
+    silent: true
+    cmds:
+    - rm -rf {{.BUILD_DIR}}
+    - rm -rf {{.COVERAGE_DIR}}
+    - rm -f coverage.out coverage.html
+    - go clean -cache
+    - go clean -testcache
+
+  clean:debug:
+    desc: Clean development build artifacts only
+    silent: true
+    cmds:
+    - rm -rf {{.BUILD_DIR}}/debug
+    - echo "Development build artifacts cleaned"
+
+  clean:release:linux:
+    desc: Clean Linux release build artifacts only
+    silent: true
+    cmds:
+    - rm -rf {{.BUILD_DIR}}/linux
+    - echo "Linux release build artifacts cleaned"
+
+  clean:release:darwin:
+    desc: Clean macOS release build artifacts only
+    silent: true
+    cmds:
+    - rm -rf {{.BUILD_DIR}}/darwin
+    - echo "macOS release build artifacts cleaned"
+
+  clean:release:windows:
+    desc: Clean Windows release build artifacts only
+    silent: true
+    cmds:
+    - rm -rf {{.BUILD_DIR}}/windows
+    - echo "Windows release build artifacts cleaned"
+
+  clean:release:all:
+    desc: Clean all release build artifacts
+    silent: true
+    cmds:
+    - rm -rf {{.BUILD_DIR}}/linux
+    - rm -rf {{.BUILD_DIR}}/darwin
+    - rm -rf {{.BUILD_DIR}}/windows
+    - echo "All release build artifacts cleaned" 

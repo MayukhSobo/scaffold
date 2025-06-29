@@ -1,0 +1,16 @@
+version: "3"
+
+tasks:
+  # Docker tasks
+  docker:build:
+    desc: Build Docker image
+    silent: true
+    cmds:
+    - docker build -t {{.APP_NAME}}:{{.VERSION}} .
+    - echo "Docker image built {{.APP_NAME}}:{{.VERSION}}"
+
+  docker:run:
+    desc: Run Docker container
+    silent: true
+    cmds:
+    - docker run --rm -p 8080:8080 {{.APP_NAME}}:{{.VERSION}} 

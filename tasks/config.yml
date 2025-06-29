@@ -1,0 +1,14 @@
+version: "3"
+
+tasks:
+  # Config tasks
+  config:validate:
+    desc: Validate configuration files
+    silent: true
+    cmds:
+    - |
+      for config in {{.CONFIG_DIR}}/*.yml; do
+        echo "Validating $config..."
+        go run ./{{.CMD_DIR}} --config="$config" --validate-config || exit 1
+      done
+    - echo "All configuration files are valid" 
