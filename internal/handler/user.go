@@ -2,9 +2,9 @@ package handler
 
 import (
 	"net/http"
-	"scaffold/internal/service"
-	resp "scaffold/pkg/helper"
-	"scaffold/pkg/log"
+	"github.com/MayukhSobo/scaffold/internal/service"
+	resp "github.com/MayukhSobo/scaffold/pkg/helper"
+	"github.com/MayukhSobo/scaffold/pkg/log"
 
 	"github.com/gin-gonic/gin"
 )

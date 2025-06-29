@@ -1,10 +1,10 @@
 package server
 
 import (
-	"scaffold/internal/handler"
-	"scaffold/internal/middleware"
-	resp "scaffold/pkg/helper"
-	"scaffold/pkg/log"
+	"github.com/MayukhSobo/scaffold/internal/handler"
+	"github.com/MayukhSobo/scaffold/internal/middleware"
+	resp "github.com/MayukhSobo/scaffold/pkg/helper"
+	"github.com/MayukhSobo/scaffold/pkg/log"
 
 	"github.com/gin-gonic/gin"
 )

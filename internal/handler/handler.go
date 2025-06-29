@@ -1,7 +1,7 @@
 package handler
 
 import (
-	"scaffold/pkg/log"
+	"github.com/MayukhSobo/scaffold/pkg/log"
 )
 
 type Handler struct {

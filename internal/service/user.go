@@ -1,8 +1,8 @@
 package service
 
 import (
-	"scaffold/internal/model"
-	"scaffold/internal/repository"
+	"github.com/MayukhSobo/scaffold/internal/model"
+	"github.com/MayukhSobo/scaffold/internal/repository"
 )
 
 type UserService interface {

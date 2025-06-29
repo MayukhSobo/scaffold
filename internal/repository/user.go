@@ -1,7 +1,7 @@
 package repository
 
 import (
-	"scaffold/internal/model"
+	"github.com/MayukhSobo/scaffold/internal/model"
 )
 
 type UserRepository interface {

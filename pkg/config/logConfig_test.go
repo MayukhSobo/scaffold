@@ -3,7 +3,7 @@ package config
 import (
 	"os"
 	"path/filepath"
-	"scaffold/pkg/log"
+	"github.com/MayukhSobo/scaffold/pkg/log"
 	"testing"
 
 	"github.com/spf13/viper"

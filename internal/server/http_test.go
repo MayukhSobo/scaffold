@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"net/http"
 	"net/http/httptest"
-	"scaffold/internal/handler"
-	"scaffold/pkg/log"
+	"github.com/MayukhSobo/scaffold/internal/handler"
+	"github.com/MayukhSobo/scaffold/pkg/log"
 	"testing"
 
 	"github.com/gin-gonic/gin"

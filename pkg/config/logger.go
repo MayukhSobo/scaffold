@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"scaffold/pkg/log"
+	"github.com/MayukhSobo/scaffold/pkg/log"
 
 	"github.com/spf13/viper"
 )

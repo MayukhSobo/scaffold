@@ -2,8 +2,8 @@ package main
 
 import (
 	"fmt"
-	"scaffold/pkg/config"
-	"scaffold/pkg/log"
+	"github.com/MayukhSobo/scaffold/pkg/config"
+	"github.com/MayukhSobo/scaffold/pkg/log"
 
 	"github.com/spf13/viper"
 )

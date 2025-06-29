@@ -1,6 +1,6 @@
 package service
 
-import "scaffold/pkg/log"
+import "github.com/MayukhSobo/scaffold/pkg/log"
 
 type Service struct {
 	logger log.Logger

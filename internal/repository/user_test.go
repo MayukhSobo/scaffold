@@ -2,7 +2,7 @@ package repository
 
 import (
 	"bytes"
-	"scaffold/pkg/log"
+	"github.com/MayukhSobo/scaffold/pkg/log"
 	"testing"
 
 	"gorm.io/gorm"

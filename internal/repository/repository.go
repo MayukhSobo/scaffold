@@ -1,7 +1,7 @@
 package repository
 
 import (
-	"scaffold/pkg/log"
+	"github.com/MayukhSobo/scaffold/pkg/log"
 
 	"gorm.io/gorm"
 )

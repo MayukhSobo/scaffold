@@ -2,8 +2,8 @@ package service
 
 import (
 	"bytes"
-	"scaffold/internal/repository"
-	"scaffold/pkg/log"
+	"github.com/MayukhSobo/scaffold/internal/repository"
+	"github.com/MayukhSobo/scaffold/pkg/log"
 	"testing"
 
 	"gorm.io/gorm"

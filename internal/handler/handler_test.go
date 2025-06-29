@@ -2,7 +2,7 @@ package handler
 
 import (
 	"bytes"
-	"scaffold/pkg/log"
+	"github.com/MayukhSobo/scaffold/pkg/log"
 	"testing"
 )
 
