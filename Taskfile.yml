@@ -22,7 +22,7 @@ vars:
   BUILD_TIME:
     sh: date -u +"%Y-%m-%dT%H:%M:%SZ"
   # Test directories - modify this to add/remove directories from testing
-  TEST_DIRS: "./cmd/... ./pkg/..."
+  TEST_DIRS: ./cmd/... ./pkg/...
   # Coverage output directory
   COVERAGE_DIR: reports
 
@@ -42,7 +42,7 @@ tasks:
   build:
     desc: Build development binary with debug symbols and race detection
     silent: true
-    deps: [ "clean" ]
+    deps: [ clean ]
     cmds:
     - mkdir -p {{.BUILD_DIR}}/debug
     - go build -race -gcflags="all=-N -l" -ldflags="-X main.version={{.VERSION}}-dev -X main.buildTime={{.BUILD_TIME}}" -o {{.BUILD_DIR}}/debug/{{.BINARY_DEBUG}} ./{{.CMD_DIR}}
@@ -113,7 +113,7 @@ tasks:
   build:release:all:
     desc: Build release binaries for all platforms
     silent: true
-    deps: [ "build:release:linux", "build:release:darwin", "build:release:windows" ]
+    deps: [ build:release:linux, build:release:darwin, build:release:windows ]
     cmds:
     - echo "All release binaries built successfully"
 
@@ -133,7 +133,7 @@ tasks:
   dev:
     desc: Run the application in development mode with hot reload
     silent: true
-    deps: [ "build" ]
+    deps: [ build ]
     cmds:
     - |
       if ! command -v air &> /dev/null; then
