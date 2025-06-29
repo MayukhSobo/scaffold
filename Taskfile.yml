@@ -1,0 +1,441 @@
+version: '3'
+
+vars:
+  APP_NAME: Scaffold
+  BUILD_DIR: build
+  CMD_DIR: cmd/server
+  CONFIG_DIR: configs
+
+  # Binary naming configuration
+  BINARY_BASE_NAME: scaffold
+  BINARY_NAME: "{{.BINARY_BASE_NAME}}"
+
+  # Release binary naming: [BINARY_BASE_NAME]-[ARCH]-[PLATFORM]
+  BINARY_LINUX: "{{.BINARY_BASE_NAME}}-amd64-linux"
+  BINARY_DARWIN: "{{.BINARY_BASE_NAME}}-amd64-darwin"
+  BINARY_WINDOWS: "{{.BINARY_BASE_NAME}}-amd64-windows.exe"
+  BINARY_DEBUG: "{{.BINARY_BASE_NAME}}"
+
+  GO_VERSION: 1.24.3
+  VERSION:
+    sh: git describe --tags --always --dirty 2>/dev/null || echo "v1.0.0"
+  BUILD_TIME:
+    sh: date -u +"%Y-%m-%dT%H:%M:%SZ"
+  # Test directories - modify this to add/remove directories from testing
+  TEST_DIRS: "./cmd/... ./pkg/..."
+  # Coverage output directory
+  COVERAGE_DIR: reports
+
+env:
+  CGO_ENABLED: 0
+  GOOS: '{{OS}}'
+  GOARCH: '{{ARCH}}'
+
+tasks:
+  default:
+    desc: Show available tasks
+    cmds:
+    - task --list
+    silent: true
+
+  # Build tasks
+  build:
+    desc: Build development binary with debug symbols and race detection
+    silent: true
+    deps: [ "clean" ]
+    cmds:
+    - mkdir -p {{.BUILD_DIR}}/debug
+    - go build -race -gcflags="all=-N -l" -ldflags="-X main.version={{.VERSION}}-dev -X main.buildTime={{.BUILD_TIME}}" -o {{.BUILD_DIR}}/debug/{{.BINARY_DEBUG}} ./{{.CMD_DIR}}
+    - echo "Development binary built at {{.BUILD_DIR}}/debug/{{.BINARY_DEBUG}}"
+    - echo "  Debug symbols - YES (included)"
+    - echo "  Race detection - YES (enabled)"
+    - echo "  Optimization - NO (disabled for debugging)"
+    - echo "  Size - LARGE (includes debug info)"
+    generates:
+    - "{{.BUILD_DIR}}/debug/{{.BINARY_DEBUG}}"
+
+  build:release:linux:
+    desc: Build release binary for Linux
+    silent: true
+    env:
+      GOOS: linux
+      GOARCH: amd64
+    cmds:
+    - mkdir -p {{.BUILD_DIR}}/linux
+    - go build -a -trimpath -ldflags="-s -w -X main.version={{.VERSION}} -X main.buildTime={{.BUILD_TIME}} -extldflags=-static" -installsuffix=netgo -o {{.BUILD_DIR}}/linux/{{.BINARY_LINUX}} ./{{.CMD_DIR}}
+    - |
+      if command -v upx &> /dev/null; then
+        echo "Compressing Linux binary with UPX..."
+        upx --best --lzma {{.BUILD_DIR}}/linux/{{.BINARY_LINUX}} 2>/dev/null || upx --best {{.BUILD_DIR}}/linux/{{.BINARY_LINUX}} 2>/dev/null || echo "UPX compression skipped"
+      fi
+    - echo "Linux release binary built at {{.BUILD_DIR}}/linux/{{.BINARY_LINUX}}"
+    generates:
+    - "{{.BUILD_DIR}}/linux/{{.BINARY_LINUX}}"
+
+  build:release:darwin:
+    desc: Build release binary for macOS
+    silent: true
+    env:
+      GOOS: darwin
+      GOARCH: amd64
+    cmds:
+    - mkdir -p {{.BUILD_DIR}}/darwin
+    - go build -a -trimpath -ldflags="-s -w -X main.version={{.VERSION}} -X main.buildTime={{.BUILD_TIME}}" -o {{.BUILD_DIR}}/darwin/{{.BINARY_DARWIN}} ./{{.CMD_DIR}}
+    - |
+      if command -v upx &> /dev/null; then
+        echo "Compressing macOS binary with UPX..."
+        upx --best --lzma --force-macos {{.BUILD_DIR}}/darwin/{{.BINARY_DARWIN}} 2>/dev/null || upx --best {{.BUILD_DIR}}/darwin/{{.BINARY_DARWIN}} 2>/dev/null || echo "UPX compression skipped"
+      fi
+    - echo "macOS release binary built at {{.BUILD_DIR}}/darwin/{{.BINARY_DARWIN}}"
+    generates:
+    - "{{.BUILD_DIR}}/darwin/{{.BINARY_DARWIN}}"
+
+  build:release:windows:
+    desc: Build release binary for Windows
+    silent: true
+    env:
+      GOOS: windows
+      GOARCH: amd64
+    cmds:
+    - mkdir -p {{.BUILD_DIR}}/windows
+    - go build -a -trimpath -ldflags="-s -w -X main.version={{.VERSION}} -X main.buildTime={{.BUILD_TIME}} -extldflags=-static" -installsuffix=netgo -o {{.BUILD_DIR}}/windows/{{.BINARY_WINDOWS}} ./{{.CMD_DIR}}
+    - |
+      if command -v upx &> /dev/null; then
+        echo "Compressing Windows binary with UPX..."
+        upx --best --lzma {{.BUILD_DIR}}/windows/{{.BINARY_WINDOWS}} 2>/dev/null || upx --best {{.BUILD_DIR}}/windows/{{.BINARY_WINDOWS}} 2>/dev/null || echo "UPX compression skipped"
+      fi
+    - echo "Windows release binary built at {{.BUILD_DIR}}/windows/{{.BINARY_WINDOWS}}"
+    generates:
+    - "{{.BUILD_DIR}}/windows/{{.BINARY_WINDOWS}}"
+
+  build:release:all:
+    desc: Build release binaries for all platforms
+    silent: true
+    deps: [ "build:release:linux", "build:release:darwin", "build:release:windows" ]
+    cmds:
+    - echo "All release binaries built successfully"
+
+  # Development tasks
+  run:
+    desc: Run the application with local config
+    silent: true
+    cmds:
+    - go run ./{{.CMD_DIR}} --config={{.CONFIG_DIR}}/local.yml
+
+  run:prod:
+    desc: Run the application with production config
+    silent: true
+    cmds:
+    - go run ./{{.CMD_DIR}} --config={{.CONFIG_DIR}}/prod.yml
+
+  dev:
+    desc: Run the application in development mode with hot reload
+    silent: true
+    cmds:
+    - |
+      if ! command -v air &> /dev/null; then
+        echo "Installing air..."
+        go install github.com/air-verse/air@latest
+      fi
+    - air
+
+  # Test tasks
+  test:
+    desc: Run all tests
+    silent: true
+    cmds:
+    - |
+      if ! command -v gotestsum &> /dev/null; then
+        echo "Installing gotestsum..."
+        go install gotest.tools/gotestsum@latest
+      fi
+    - gotestsum --format=testname -- {{.TEST_DIRS}}
+
+  test:unit:
+    desc: Run unit tests only
+    silent: true
+    cmds:
+    - |
+      if ! command -v gotestsum &> /dev/null; then
+        echo "Installing gotestsum..."
+        go install gotest.tools/gotestsum@latest
+      fi
+    - gotestsum --format=testname -- -short {{.TEST_DIRS}}
+
+  test:integration:
+    desc: Run integration tests only
+    silent: true
+    cmds:
+    - |
+      if ! command -v gotestsum &> /dev/null; then
+        echo "Installing gotestsum..."
+        go install gotest.tools/gotestsum@latest
+      fi
+    - gotestsum --format=testname -- -run Integration {{.TEST_DIRS}}
+
+  test:coverage:
+    desc: Run tests with coverage report
+    silent: true
+    cmds:
+    - mkdir -p {{.COVERAGE_DIR}}
+    - |
+      if ! command -v gotestsum &> /dev/null; then
+        echo "Installing gotestsum..."
+        go install gotest.tools/gotestsum@latest
+      fi
+    - gotestsum --format=testname -- -coverprofile={{.COVERAGE_DIR}}/coverage.out -covermode=atomic {{.TEST_DIRS}}
+    - go tool cover -html={{.COVERAGE_DIR}}/coverage.out -o {{.COVERAGE_DIR}}/coverage.html
+    - echo "Coverage report generated at {{.COVERAGE_DIR}}/coverage.html"
+
+  test:coverage:open:
+    desc: Generate comprehensive coverage reports and open in browser
+    silent: true
+    cmds:
+    - mkdir -p {{.COVERAGE_DIR}}
+    - |
+      if ! command -v gotestsum &> /dev/null; then
+        echo "Installing gotestsum..."
+        go install gotest.tools/gotestsum@latest
+      fi
+    - gotestsum --format=testname -- -coverprofile={{.COVERAGE_DIR}}/coverage.out -covermode=atomic {{.TEST_DIRS}}
+    - go tool cover -html={{.COVERAGE_DIR}}/coverage.out -o {{.COVERAGE_DIR}}/coverage.html
+    - |
+      if ! command -v gocov &> /dev/null; then
+        echo "Installing gocov..."
+        go install github.com/axw/gocov/gocov@latest
+      fi
+    - |
+      if ! command -v gocov-html &> /dev/null; then
+        echo "Installing gocov-html..."
+        go install github.com/matm/gocov-html/cmd/gocov-html@latest || echo "gocov-html install skipped"
+      fi
+    - gocov convert {{.COVERAGE_DIR}}/coverage.out | gocov-html > {{.COVERAGE_DIR}}/coverage-enhanced.html 2>/dev/null || echo "Enhanced coverage skipped"
+    - |
+      if ! command -v go-cover-treemap &> /dev/null; then
+        echo "Installing go-cover-treemap..."
+        go install github.com/nikolaydubina/go-cover-treemap@latest
+      fi
+    - go-cover-treemap -coverprofile={{.COVERAGE_DIR}}/coverage.out > {{.COVERAGE_DIR}}/coverage-treemap.svg 2>/dev/null || echo "Treemap coverage skipped"
+    - |
+      cd {{.COVERAGE_DIR}} && python3 -m http.server 8080 > /dev/null 2>&1 &
+      HTTP_PID=$!
+      echo "Coverage server started at http://localhost:8080"
+      echo "Available reports:"
+      echo "  • Standard: http://localhost:8080/coverage.html"
+      echo "  • Enhanced: http://localhost:8080/coverage-enhanced.html (gocov + gocov-html)"
+      echo "  • Treemap: http://localhost:8080/coverage-treemap.svg (visual treemap)"
+      echo ""
+      echo "Press Ctrl+C to stop the server"
+      sleep 2
+      if command -v open &> /dev/null; then
+        open http://localhost:8080
+      elif command -v xdg-open &> /dev/null; then
+        xdg-open http://localhost:8080
+      fi
+      wait $HTTP_PID
+
+  test:race:
+    desc: Run tests with race detection
+    silent: true
+    cmds:
+    - |
+      if ! command -v gotestsum &> /dev/null; then
+        echo "Installing gotestsum..."
+        go install gotest.tools/gotestsum@latest
+      fi
+    - gotestsum --format=testname -- -race {{.TEST_DIRS}}
+
+  test:benchmark:
+    desc: Run benchmark tests
+    silent: true
+    cmds:
+    - |
+      if ! command -v gotestsum &> /dev/null; then
+        echo "Installing gotestsum..."
+        go install gotest.tools/gotestsum@latest
+      fi
+    - gotestsum --format=testname -- -bench=. -benchmem {{.TEST_DIRS}}
+
+  # Code quality tasks
+  lint:
+    desc: Run linter
+    silent: true
+    cmds:
+    - |
+      if ! command -v golangci-lint &> /dev/null; then
+        echo "Installing golangci-lint..."
+        go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+      fi
+    - golangci-lint run
+
+  fmt:
+    desc: Format code
+    silent: true
+    cmds:
+    - go fmt ./...
+    - echo "Code formatted successfully"
+
+  vet:
+    desc: Run go vet
+    silent: true
+    cmds:
+    - go vet ./...
+    - echo "Vet analysis completed"
+
+  check:
+    desc: Run all code quality checks
+    silent: true
+    deps: [ fmt, vet, lint ]
+    cmds:
+    - echo "All code quality checks completed"
+
+  # Dependency management
+  deps:
+    desc: Download and install dependencies
+    silent: true
+    cmds:
+    - go mod download
+    - go mod tidy
+    - echo "Dependencies updated"
+
+  deps:install:
+    desc: Install/update dependencies
+    silent: true
+    cmds:
+    - go mod download
+    - go mod tidy
+    - echo "Dependencies installed"
+
+  deps:update:
+    desc: Update all dependencies
+    silent: true
+    cmds:
+    - go get -u ./...
+    - go mod tidy
+    - echo "Dependencies updated to latest versions"
+
+  # Utility tasks
+  clean:
+    desc: Clean all build artifacts
+    silent: true
+    cmds:
+    - rm -rf {{.BUILD_DIR}}
+    - rm -rf {{.COVERAGE_DIR}}
+    - rm -f coverage.out coverage.html
+    - go clean -cache
+    - go clean -testcache
+
+  clean:debug:
+    desc: Clean development build artifacts only
+    silent: true
+    cmds:
+    - rm -rf {{.BUILD_DIR}}/debug
+    - echo "Development build artifacts cleaned"
+
+  clean:release:linux:
+    desc: Clean Linux release build artifacts only
+    silent: true
+    cmds:
+    - rm -rf {{.BUILD_DIR}}/linux
+    - echo "Linux release build artifacts cleaned"
+
+  clean:release:darwin:
+    desc: Clean macOS release build artifacts only
+    silent: true
+    cmds:
+    - rm -rf {{.BUILD_DIR}}/darwin
+    - echo "macOS release build artifacts cleaned"
+
+  clean:release:windows:
+    desc: Clean Windows release build artifacts only
+    silent: true
+    cmds:
+    - rm -rf {{.BUILD_DIR}}/windows
+    - echo "Windows release build artifacts cleaned"
+
+  clean:release:all:
+    desc: Clean all release build artifacts
+    silent: true
+    cmds:
+    - rm -rf {{.BUILD_DIR}}/linux
+    - rm -rf {{.BUILD_DIR}}/darwin
+    - rm -rf {{.BUILD_DIR}}/windows
+    - echo "All release build artifacts cleaned"
+
+  # Docker tasks
+  docker:build:
+    desc: Build Docker image
+    silent: true
+    cmds:
+    - docker build -t {{.APP_NAME}}:{{.VERSION}} .
+    - echo "Docker image built {{.APP_NAME}}:{{.VERSION}}"
+
+  docker:run:
+    desc: Run Docker container
+    silent: true
+    cmds:
+    - docker run --rm -p 8080:8080 {{.APP_NAME}}:{{.VERSION}}
+
+  # Config tasks
+  config:validate:
+    desc: Validate configuration files
+    silent: true
+    cmds:
+    - |
+      for config in {{.CONFIG_DIR}}/*.yml; do
+        echo "Validating $config..."
+        go run ./{{.CMD_DIR}} --config="$config" --validate-config || exit 1
+      done
+    - echo "All configuration files are valid"
+
+  # Help task
+  help:
+    desc: Show detailed help for all tasks
+    silent: true
+    cmds:
+    - echo "🚀 {{.APP_NAME}} Tasks"
+    - echo ""
+    - echo "📦 Build Tasks:"
+    - echo "  build                    - Build development binary (debug + race detection)"
+    - echo "  build:release:linux      - Build optimized Linux binary"
+    - echo "  build:release:darwin     - Build optimized macOS binary"
+    - echo "  build:release:windows    - Build optimized Windows binary"
+    - echo "  build:release:all        - Build all platform binaries"
+    - echo ""
+    - echo "🧹 Clean Tasks:"
+    - echo "  clean                    - Clean all build artifacts"
+    - echo "  clean:debug              - Clean debug build only"
+    - echo "  clean:release:all        - Clean all release builds"
+    - echo ""
+    - echo "🏃 Development Tasks:"
+    - echo "  run                      - Run with local config"
+    - echo "  run:prod                 - Run with production config"
+    - echo "  dev                      - Run with hot reload (air)"
+    - echo ""
+    - echo "🧪 Test Tasks:"
+    - echo "  test                     - Run all tests with gotestsum"
+    - echo "  test:unit                - Run unit tests only"
+    - echo "  test:integration         - Run integration tests only"
+    - echo "  test:coverage            - Generate coverage report"
+    - echo "  test:coverage:open       - Generate comprehensive coverage (gocov + treemap) + web server"
+    - echo "  test:race                - Run tests with race detection"
+    - echo "  test:benchmark           - Run benchmark tests"
+    - echo ""
+    - echo "🔍 Code Quality Tasks:"
+    - echo "  lint                     - Run golangci-lint"
+    - echo "  fmt                      - Format code with gofmt"
+    - echo "  vet                      - Run go vet analysis"
+    - echo "  check                    - Run all quality checks"
+    - echo ""
+    - echo "📦 Dependencies:"
+    - echo "  deps                     - Download and tidy dependencies"
+    - echo "  deps:update              - Update all dependencies"
+    - echo ""
+    - echo "🐳 Docker Tasks:"
+    - echo "  docker:build             - Build Docker image"
+    - echo "  docker:run               - Run Docker container"
+    - echo ""
+    - echo "⚙️  Config Tasks:"
+    - echo "  config:validate          - Validate configuration files"
+    - echo ""
+    - echo "💡 Use 'task <task-name>' to run any task"

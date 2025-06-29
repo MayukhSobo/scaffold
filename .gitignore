@@ -1,0 +1,54 @@
+/storage/
+.idea
+*.log
+
+# Build artifacts
+build/
+tmp/
+dist/
+
+# Test artifacts
+coverage.out
+coverage.html
+*.test
+reports/
+
+# Air hot reload
+build-errors.log
+
+# Go workspace
+go.work
+go.work.sum
+
+# Binaries
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+server
+golang-di
+
+# IDE
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trash
+ehthumbs.db
+Thumbs.db
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Logs
+logs/
+*.log

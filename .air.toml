@@ -1,0 +1,46 @@
+root = "."
+testdata_dir = "testdata"
+tmp_dir = "build/dev"
+
+[build]
+  args_bin = ["--config=configs/local.yml"]
+  bin = "./build/dev/main"
+  cmd = "go build -race -gcflags='all=-N -l' -ldflags='-X main.version=dev' -o ./build/dev/main ./cmd/server"
+  delay = 1000
+  exclude_dir = ["assets", "vendor", "testdata", "build", "logs", "reports"]
+  exclude_file = []
+  exclude_regex = ["_test.go"]
+  exclude_unchanged = false
+  follow_symlink = false
+  full_bin = ""
+  include_dir = []
+  include_ext = ["go", "yml", "yaml", "json"]
+  include_file = []
+  kill_delay = "0s"
+  log = "build-errors.log"
+  poll = false
+  poll_interval = 0
+  post_cmd = []
+  pre_cmd = []
+  rerun = false
+  rerun_delay = 500
+  send_interrupt = false
+  stop_on_root = false
+
+[color]
+  app = ""
+  build = "yellow"
+  main = "magenta"
+  runner = "green"
+  watcher = "cyan"
+
+[log]
+  main_only = false
+  time = false
+
+[misc]
+  clean_on_exit = false
+
+[screen]
+  clear_on_rebuild = false
+  keep_scroll = true 
