@@ -48,4 +48,4 @@ tasks:
     silent: true
     cmds:
     - docker stop $(docker ps -q --filter ancestor={{.DOCKER_IMAGE_NAME}}:{{.VERSION}}) 2>/dev/null || echo "No running containers found"
-    - echo "Container stopped" 
+    - echo "Container stopped"

@@ -51,4 +51,4 @@ tasks:
     - echo "⚙️  Config Tasks:"
     - echo "  config:validate          - Validate configuration files"
     - echo ""
-    - echo "💡 Use 'task <task-name>' to run any task" 
+    - echo "💡 Use 'task <task-name>' to run any task"
