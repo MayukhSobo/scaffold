@@ -58,11 +58,12 @@ tasks:
     desc: Build release binary for Linux
     silent: true
     env:
+      CGO_ENABLED: 0
       GOOS: linux
       GOARCH: amd64
     cmds:
     - mkdir -p {{.BUILD_DIR}}/linux
-    - go build -a -trimpath -ldflags="-s -w -X main.version={{.VERSION}} -X main.buildTime={{.BUILD_TIME}} -extldflags=-static" -installsuffix=netgo -o {{.BUILD_DIR}}/linux/{{.BINARY_LINUX}} ./{{.CMD_DIR}}
+    - go build -a -trimpath -ldflags="-s -w -X main.version={{.VERSION}} -X main.buildTime={{.BUILD_TIME}}" -installsuffix=netgo -o {{.BUILD_DIR}}/linux/{{.BINARY_LINUX}} ./{{.CMD_DIR}}
     - |
       if command -v upx &> /dev/null; then
         echo "Compressing Linux binary with UPX..."
@@ -94,11 +95,12 @@ tasks:
     desc: Build release binary for Windows
     silent: true
     env:
+      CGO_ENABLED: 0
       GOOS: windows
       GOARCH: amd64
     cmds:
     - mkdir -p {{.BUILD_DIR}}/windows
-    - go build -a -trimpath -ldflags="-s -w -X main.version={{.VERSION}} -X main.buildTime={{.BUILD_TIME}} -extldflags=-static" -installsuffix=netgo -o {{.BUILD_DIR}}/windows/{{.BINARY_WINDOWS}} ./{{.CMD_DIR}}
+    - go build -a -trimpath -ldflags="-s -w -X main.version={{.VERSION}} -X main.buildTime={{.BUILD_TIME}}" -installsuffix=netgo -o {{.BUILD_DIR}}/windows/{{.BINARY_WINDOWS}} ./{{.CMD_DIR}}
     - |
       if command -v upx &> /dev/null; then
         echo "Compressing Windows binary with UPX..."
