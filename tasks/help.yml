@@ -2,7 +2,7 @@ version: "3"
 
 tasks:
   # Help task
-  help:
+  show:
     desc: Show detailed help for all tasks
     silent: true
     cmds:
