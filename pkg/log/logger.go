@@ -38,8 +38,6 @@ type Field struct {
 	Value any
 }
 
-// Field constructor functions.
-
 // String creates a string field.
 func String(key, value string) Field {
 	return Field{Key: key, Value: value}
