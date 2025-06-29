@@ -7,7 +7,7 @@ on:
     branches: [ main ]
 
 env:
-  GO_VERSION: '1.24.3'
+  GO_VERSION: 1.24.3
 
 jobs:
   test:
@@ -29,15 +29,15 @@ jobs:
       with:
         version: 3.x
 
-    - name: Cache Go modules
-      uses: actions/cache@v4
-      with:
-        path: |
-          ~/.cache/go-build
-          ~/go/pkg/mod
-        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-        restore-keys: |
-          ${{ runner.os }}-go-
+    # - name: Cache Go modules
+    #   uses: actions/cache@v4
+    #   with:
+    #     path: |
+    #       ~/.cache/go-build
+    #       ~/go/pkg/mod
+    #     key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+    #     restore-keys: |
+    #       ${{ runner.os }}-go-
 
     - name: Install dependencies
       run: task deps:install
