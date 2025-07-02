@@ -48,6 +48,8 @@ jobs:
       - name: Build project
         run: task build:debug
 
+      # Note: For local CodeQL analysis, use: task codeql:ci
+      # This CI workflow uses GitHub Actions for integration with Security tab
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v3
         with:

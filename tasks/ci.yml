@@ -1,0 +1,173 @@
+version: "3"
+
+tasks:
+  # Individual CI job equivalents
+  test:
+    desc: Run test job (like CI)
+    silent: true
+    cmds:
+    - echo "🧪 Running test job..."
+    - task deps:install
+    - task test:test
+    - task test:test:race
+    - echo "✅ Test job completed successfully"
+
+  lint:
+    desc: Run lint job (like CI)
+    silent: true
+    cmds:
+    - echo "🔍 Running lint job..."
+    - task deps:install
+    - task quality:check
+    - task deps:vulnerabilities
+    - echo "✅ Lint job completed successfully"
+
+  build:
+    desc: Run build job for current platform (like CI)
+    silent: true
+    cmds:
+    - echo "🔨 Running build job..."
+    - task deps:install
+    - |
+      case "{{OS}}" in
+        linux) task build:release:linux ;;
+        darwin) task build:release:darwin ;;
+        windows) task build:release:windows ;;
+        *) echo "❌ Unsupported OS: {{OS}}"; exit 1 ;;
+      esac
+    - echo "✅ Build job completed successfully"
+
+  build:all:
+    desc: Run build job for all platforms (like CI)
+    silent: true
+    cmds:
+    - echo "🔨 Running build job for all platforms..."
+    - task deps:install
+    - task build:release:linux
+    - task build:release:darwin
+    - task build:release:windows
+    - echo "✅ Build job for all platforms completed successfully"
+
+  security:
+    desc: Run security job (like CI)
+    silent: true
+    cmds:
+    - echo "🔒 Running security job..."
+    - task deps:install
+    - task quality:gosec
+    - task deps:vulnerabilities
+    - echo "✅ Security job completed successfully"
+
+  docker:
+    desc: Run Docker job (like CI)
+    silent: true
+    cmds:
+    - echo "🐳 Running Docker job..."
+    - task docker:ci
+    - echo "✅ Docker job completed successfully"
+
+  codeql:
+    desc: Run CodeQL job (like CI)
+    silent: true
+    cmds:
+    - echo "🔍 Running CodeQL job..."
+    - task codeql:ci
+    - echo "✅ CodeQL job completed successfully"
+
+  # Combined workflows
+  pr:
+    desc: Run all checks that would run on a PR
+    silent: true
+    cmds:
+    - echo "🔄 Running PR checks..."
+    - task ci:test
+    - task ci:lint
+    - task ci:build
+    - task ci:security
+    - task docker:build  # Just build, don't push
+    - echo "✅ All PR checks completed successfully"
+
+  main:
+    desc: Run all checks that would run on main branch
+    silent: true
+    cmds:
+    - echo "🚀 Running main branch checks..."
+    - task ci:test
+    - task ci:lint
+    - task ci:build:all
+    - task ci:security
+    - task ci:docker
+    - task ci:codeql
+    - echo "✅ All main branch checks completed successfully"
+
+  # Quick checks
+  quick:
+    desc: Run quick CI checks (test + lint only)
+    silent: true
+    cmds:
+    - echo "⚡ Running quick CI checks..."
+    - task ci:test
+    - task ci:lint
+    - echo "✅ Quick CI checks completed successfully"
+
+  # Full local CI simulation
+  full:
+    desc: Run complete CI pipeline locally
+    silent: true
+    cmds:
+    - echo "🎯 Running complete CI pipeline locally..."
+    - echo "This will take several minutes..."
+    - task ci:main
+    - echo "🎉 Complete CI pipeline completed successfully!"
+    - echo "Your code is ready for production! 🚀"
+
+  # Pre-commit hook equivalent
+  pre-commit:
+    desc: Run checks suitable for pre-commit hook
+    silent: true
+    cmds:
+    - echo "🪝 Running pre-commit checks..."
+    - task quality:all
+    - task test:test
+    - task deps:vulnerabilities
+    - echo "✅ Pre-commit checks completed successfully"
+
+  # Status and info
+  status:
+    desc: Show CI status and available commands
+    silent: true
+    cmds:
+    - |
+      echo "📊 CI Status Dashboard"
+      echo "====================="
+      echo
+      echo "Available CI commands:"
+      echo "  task ci:quick      - Fast checks (test + lint)"
+      echo "  task ci:pr         - All PR checks"
+      echo "  task ci:main       - All main branch checks"
+      echo "  task ci:full       - Complete CI simulation"
+      echo "  task ci:pre-commit - Pre-commit hook checks"
+      echo
+      echo "Individual job commands:"
+      echo "  task ci:test       - Test job"
+      echo "  task ci:lint       - Lint job"
+      echo "  task ci:build      - Build job (current platform)"
+      echo "  task ci:build:all  - Build job (all platforms)"
+      echo "  task ci:security   - Security job"
+      echo "  task ci:docker     - Docker job"
+      echo "  task ci:codeql     - CodeQL job"
+      echo
+      echo "🎯 Tip: Run 'task ci:pr' before creating a PR"
+      echo "🚀 Tip: Run 'task ci:full' to simulate complete CI"
+
+  # Cleanup
+  clean:
+    desc: Clean all CI-related artifacts
+    silent: true
+    cmds:
+    - echo "🧹 Cleaning CI artifacts..."
+    - task clean:all
+    - task docker:clean:all
+    - task codeql:clean:all
+    - rm -rf reports
+    - echo "✅ CI artifacts cleaned" 

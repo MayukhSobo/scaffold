@@ -9,6 +9,8 @@ includes:
   deps: ./tasks/deps.yml
   clean: ./tasks/clean.yml
   docker: ./tasks/docker.yml
+  codeql: ./tasks/codeql.yml
+  ci: ./tasks/ci.yml
   config: ./tasks/config.yml
   help: ./tasks/help.yml
 

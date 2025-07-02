@@ -196,6 +196,36 @@ graph TD
 
 ---
 
+## 🔄 CI/CD Integration
+
+This project features **streamlined CI/CD integration** where the same tasks run both locally and in CI, ensuring reproducible builds and consistent environments.
+
+**📋 For complete CI/CD documentation, see [CI_TASKS.md](CI_TASKS.md)**
+
+### Quick CI Commands
+
+```bash
+# Run quick checks before committing
+task ci:quick
+
+# Run all PR checks before creating a PR
+task ci:pr
+
+# Run complete CI pipeline locally
+task ci:full
+
+# Show all available CI commands
+task ci:status
+```
+
+**Key Benefits:**
+- ✅ **Reproducible builds** - What works locally works in CI
+- ✅ **Faster feedback** - Catch issues before pushing
+- ✅ **Consistent environments** - Same tools, same versions, same results
+- ✅ **Docker + Security scanning** - Full vulnerability analysis locally
+
+---
+
 ## 🚀 Usage: Available Tasks
 
 This project uses a **modular `Taskfile.yml` structure** as a modern alternative to `Makefile`. All commands are managed through `task` with organized namespaces.

@@ -62,12 +62,22 @@ jobs:
         cache-from: type=gha
         cache-to: type=gha,mode=max
 
-    - name: Run Trivy vulnerability scanner
-      uses: aquasecurity/trivy-action@master
+    - name: Install Task
+      uses: arduino/setup-task@v2
       with:
-        image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.version }}
-        format: 'sarif'
-        output: 'trivy-results.sarif'
+        version: 3.x
+
+    - name: Run Trivy vulnerability scanner
+      env:
+        DOCKER_IMAGE_NAME: scaffold
+        VERSION: ${{ steps.meta.outputs.version }}
+      run: |
+        # Use our task for consistency with local development
+        # But scan the registry image instead of local
+        docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.version }}
+        docker tag ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.version }} scaffold:${{ steps.meta.outputs.version }}
+        task docker:scan:sarif
+        mv reports/trivy-results.sarif trivy-results.sarif
       if: github.event_name != 'pull_request'
 
     - name: Upload Trivy scan results to GitHub Security tab

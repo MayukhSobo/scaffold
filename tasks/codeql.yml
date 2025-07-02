@@ -1,0 +1,210 @@
+version: "3"
+
+vars:
+  CODEQL_CLI_VERSION: "2.16.1"
+  CODEQL_DIR: ".codeql"
+  CODEQL_DB_DIR: "{{.CODEQL_DIR}}/database"
+  CODEQL_RESULTS_DIR: "reports/codeql"
+
+tasks:
+  install:
+    desc: Install CodeQL CLI
+    silent: true
+    cmds:
+    - |
+      if [ ! -f "{{.CODEQL_DIR}}/codeql" ]; then
+        echo "📦 Installing CodeQL CLI..."
+        mkdir -p {{.CODEQL_DIR}}
+        
+        # Detect OS and architecture
+        OS=$(uname -s | tr '[:upper:]' '[:lower:]')
+        ARCH=$(uname -m)
+        
+        case $ARCH in
+          x86_64) ARCH="x64" ;;
+          arm64|aarch64) ARCH="arm64" ;;
+          *) echo "❌ Unsupported architecture: $ARCH"; exit 1 ;;
+        esac
+        
+        case $OS in
+          darwin) PLATFORM="osx64" ;;
+          linux) PLATFORM="linux64" ;;
+          *) echo "❌ Unsupported OS: $OS"; exit 1 ;;
+        esac
+        
+        # Download and extract CodeQL CLI
+        DOWNLOAD_URL="https://github.com/github/codeql-cli-binaries/releases/download/v{{.CODEQL_CLI_VERSION}}/codeql-${PLATFORM}.zip"
+        echo "📥 Downloading CodeQL CLI from $DOWNLOAD_URL"
+        
+        curl -L -o "{{.CODEQL_DIR}}/codeql.zip" "$DOWNLOAD_URL"
+        cd {{.CODEQL_DIR}}
+        unzip -q codeql.zip
+        rm codeql.zip
+        cd ..
+        
+        echo "✅ CodeQL CLI installed successfully"
+      else
+        echo "✅ CodeQL CLI already installed"
+      fi
+
+  download:queries:
+    desc: Download CodeQL query packs
+    silent: true
+    deps: [install]
+    cmds:
+    - |
+      echo "📥 Downloading CodeQL query packs..."
+      {{.CODEQL_DIR}}/codeql/codeql pack download codeql/go-queries
+      echo "✅ CodeQL query packs downloaded"
+
+  create:database:
+    desc: Create CodeQL database
+    silent: true
+    deps: [install, download:queries]
+    cmds:
+    - |
+      echo "🗄️ Creating CodeQL database..."
+      rm -rf {{.CODEQL_DB_DIR}}
+      
+      # Build the project first to ensure all dependencies are available
+      task build:debug
+      
+      # Create the database
+      {{.CODEQL_DIR}}/codeql/codeql database create {{.CODEQL_DB_DIR}} \
+        --language=go \
+        --source-root=. \
+        --command="task build:debug"
+      
+      echo "✅ CodeQL database created"
+
+  analyze:
+    desc: Run CodeQL analysis (like CI)
+    silent: true
+    deps: [create:database]
+    cmds:
+    - |
+      echo "🔍 Running CodeQL analysis..."
+      mkdir -p {{.CODEQL_RESULTS_DIR}}
+      
+      # Run security and quality queries (like CI)
+      {{.CODEQL_DIR}}/codeql/codeql database analyze {{.CODEQL_DB_DIR}} \
+        codeql/go-queries:codeql-suites/go-security-extended.qls \
+        codeql/go-queries:codeql-suites/go-code-scanning.qls \
+        --format=sarif-latest \
+        --output={{.CODEQL_RESULTS_DIR}}/results.sarif \
+        --sarif-category=go
+      
+      echo "✅ CodeQL analysis completed - results saved to {{.CODEQL_RESULTS_DIR}}/results.sarif"
+
+  analyze:security:
+    desc: Run CodeQL security analysis only
+    silent: true
+    deps: [create:database]
+    cmds:
+    - |
+      echo "🔍 Running CodeQL security analysis..."
+      mkdir -p {{.CODEQL_RESULTS_DIR}}
+      
+      {{.CODEQL_DIR}}/codeql/codeql database analyze {{.CODEQL_DB_DIR}} \
+        codeql/go-queries:codeql-suites/go-security-extended.qls \
+        --format=sarif-latest \
+        --output={{.CODEQL_RESULTS_DIR}}/security-results.sarif \
+        --sarif-category=security
+      
+      echo "✅ CodeQL security analysis completed - results saved to {{.CODEQL_RESULTS_DIR}}/security-results.sarif"
+
+  analyze:quality:
+    desc: Run CodeQL code quality analysis only
+    silent: true
+    deps: [create:database]
+    cmds:
+    - |
+      echo "🔍 Running CodeQL quality analysis..."
+      mkdir -p {{.CODEQL_RESULTS_DIR}}
+      
+      {{.CODEQL_DIR}}/codeql/codeql database analyze {{.CODEQL_DB_DIR}} \
+        codeql/go-queries:codeql-suites/go-code-scanning.qls \
+        --format=sarif-latest \
+        --output={{.CODEQL_RESULTS_DIR}}/quality-results.sarif \
+        --sarif-category=quality
+      
+      echo "✅ CodeQL quality analysis completed - results saved to {{.CODEQL_RESULTS_DIR}}/quality-results.sarif"
+
+  view:results:
+    desc: View CodeQL results in human-readable format
+    silent: true
+    cmds:
+    - |
+      if [ -f "{{.CODEQL_RESULTS_DIR}}/results.sarif" ]; then
+        echo "📊 CodeQL Analysis Results:"
+        echo "=========================="
+        
+        # Convert SARIF to CSV for easier reading
+        {{.CODEQL_DIR}}/codeql/codeql database analyze {{.CODEQL_DB_DIR}} \
+          codeql/go-queries:codeql-suites/go-security-extended.qls \
+          codeql/go-queries:codeql-suites/go-code-scanning.qls \
+          --format=csv \
+          --output={{.CODEQL_RESULTS_DIR}}/results.csv
+        
+        if [ -s "{{.CODEQL_RESULTS_DIR}}/results.csv" ]; then
+          echo "Issues found:"
+          cat {{.CODEQL_RESULTS_DIR}}/results.csv
+        else
+          echo "✅ No issues found!"
+        fi
+      else
+        echo "❌ No results found. Run 'task codeql:analyze' first."
+      fi
+
+  ci:
+    desc: Run complete CodeQL workflow (like CI)
+    silent: true
+    cmds:
+    - task: analyze
+    - task: view:results
+    - echo "✅ Complete CodeQL workflow completed"
+
+  clean:
+    desc: Clean CodeQL database and results
+    silent: true
+    cmds:
+    - rm -rf {{.CODEQL_DB_DIR}}
+    - rm -rf {{.CODEQL_RESULTS_DIR}}
+    - echo "✅ CodeQL database and results cleaned"
+
+  clean:all:
+    desc: Remove all CodeQL files including CLI
+    silent: true
+    cmds:
+    - rm -rf {{.CODEQL_DIR}}
+    - rm -rf reports/codeql
+    - echo "✅ All CodeQL files removed"
+
+  info:
+    desc: Show CodeQL installation and database info
+    silent: true
+    cmds:
+    - |
+      echo "📋 CodeQL Information:"
+      echo "====================="
+      
+      if [ -f "{{.CODEQL_DIR}}/codeql/codeql" ]; then
+        echo "✅ CodeQL CLI: Installed"
+        echo "Version: $({{.CODEQL_DIR}}/codeql/codeql version --format=text)"
+      else
+        echo "❌ CodeQL CLI: Not installed"
+      fi
+      
+      if [ -d "{{.CODEQL_DB_DIR}}" ]; then
+        echo "✅ Database: Created"
+        echo "Location: {{.CODEQL_DB_DIR}}"
+      else
+        echo "❌ Database: Not created"
+      fi
+      
+      if [ -f "{{.CODEQL_RESULTS_DIR}}/results.sarif" ]; then
+        echo "✅ Results: Available"
+        echo "Location: {{.CODEQL_RESULTS_DIR}}/results.sarif"
+      else
+        echo "❌ Results: Not available"
+      fi 
