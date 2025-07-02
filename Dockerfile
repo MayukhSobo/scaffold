@@ -1,8 +1,8 @@
 # Build stage
-FROM golang:1.24.3-alpine AS builder
+FROM golang:1.24.4 AS builder
 
 # Install build dependencies
-RUN apk add --no-cache git ca-certificates tzdata
+RUN apt-get update && apt-get install -y ca-certificates tzdata && rm -rf /var/lib/apt/lists/*
 
 # Set working directory
 WORKDIR /app
