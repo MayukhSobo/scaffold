@@ -8,12 +8,10 @@ run:
   issues-exit-code: 1
   tests: true
   skip-dirs:
-    - vendor
-    - tmp
-    - reports
+    - vendor/
+    - internal/mocks
   skip-files:
-    - ".*\\.pb\\.go$"
-    - ".*_gen\\.go$"
+    - ".*_test.go"
 
 output:
   format: colored-line-number
@@ -38,6 +36,7 @@ linters-settings:
     disable:
       - fieldalignment # Can be noisy for structs
       - shadow        # Often false positives
+    check-shadowing: true
 
   staticcheck:
     checks: ["all"]
@@ -54,8 +53,8 @@ linters-settings:
     skip-tests: true
 
   goconst:
-    min-len: 3
-    min-occurrences: 3
+    min-len: 2
+    min-occurrences: 2
 
   misspell:
     locale: US
@@ -83,57 +82,71 @@ linters-settings:
           - "checkPrivateReceivers"
           - "sayRepetitiveInsteadOfStutters"
 
+  gocritic:
+    enabled-tags:
+      - diagnostic
+      - experimental
+      - opinionated
+      - performance
+      - style
+
+  goimports:
+    local-prefixes: github.com/MayukhSobo/scaffold
+
+  nolintlint:
+    allow-leading-space: true # don't require nolint directives to be preceded by comments
+    allow-unused: false # report unused nolint directives
+    require-explanation: false # don't require an explanation for nolint directives
+    require-specific: false # don't require nolint directives to be specific about which linter is being silenced
+
+  stylecheck:
+    checks: ["all", "-ST1003", "-ST1016", "-ST1020", "-ST1021", "-ST1022"]
+
 linters:
+  disable-all: true
   enable:
-    # Default/Core linters
+    - bodyclose
+    - deadcode
+    - depguard
+    - dogsled
+    - dupl
     - errcheck
+    - exhaustive
+    - funlen
+    - gochecknoinits
+    - goconst
+    - gocritic
+    - gocyclo
+    - gofmt
+    - goimports
+    - revive
+    - goprintffuncname
+    - gosec
+    - gosimple
     - govet
     - ineffassign
+    - misspell
+    - nakedret
+    - noctx
+    - nolintlint
     - staticcheck
-    - unused
-    
-    # Code quality
-    - gocyclo
-    - cyclop
-    - goconst
-    - revive
-    - godot
-    - funlen
-    - nestif
-    
-    # Bug detection
-    - bodyclose
-    - contextcheck
-    - errorlint
-    - nilerr
-    - rowserrcheck
-    - sqlclosecheck
-    
-    # Performance
-    - prealloc
+    - structcheck
+    - stylecheck
+    - typecheck
     - unconvert
     - unparam
-    
-    # Style/Format
-    - misspell
-    - lll
-    - nakedret
+    - unused
+    - varcheck
     - whitespace
-
-  disable:
-    # Too strict for general use
-    - gochecknoinits
-    - gochecknoglobals
-    - exhaustive
-    - exhaustruct
-    - varnamelen
-    - wrapcheck
-    - nlreturn
-    - wsl
-    - mnd
-    - godox
-
-  fast: false
+    - exportloopref
+    - tenv
+    - durationcheck
+    - usestdlibvars
+    - reassign
+    - prealloc
+    - predeclared
+    - promlinter
+    - contextcheck
 
 issues:
   exclude-use-default: false
@@ -146,13 +159,11 @@ issues:
     # Exclude some linters from running on test files
     - path: _test\.go
       linters:
-        - gocyclo
-        - cyclop
-        - errcheck
         - funlen
-        - nestif
-        - bodyclose
-        - contextcheck
+        - goconst
+        - gocritic
+        - gocyclo
+        - dupl
 
     # Allow long lines in generated files
     - path: ".*\\.pb\\.go"

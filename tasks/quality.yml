@@ -28,6 +28,34 @@ tasks:
         
         golangci-lint run
 
+  fix:
+    desc: "Run linter and automatically fix issues (use skip=true to skip installation, or force=true to reinstall)"
+    silent: true
+    cmds:
+      - |
+        SKIP_INSTALL={{.skip}}
+        FORCE={{.force}}
+        
+        INSTALL_LINT=true
+        if [ "$SKIP_INSTALL" = "true" ]; then
+          INSTALL_LINT=false
+        fi
+
+        if [ "$INSTALL_LINT" = "true" ] && [ "$FORCE" != "true" ]; then
+          if command -v golangci-lint &>/dev/null && [ "$(golangci-lint --version 2>/dev/null | awk -F'version ' '{print $2}' | awk '{print $1}')" = "$(echo "{{.GOLANGCI_LINT_VERSION}}" | sed 's/v//')" ]; then
+            INSTALL_LINT=false
+          fi
+        fi
+
+        if [ "$INSTALL_LINT" = "true" ]; then
+          echo "Installing golangci-lint@{{.GOLANGCI_LINT_VERSION}}..."
+          go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@{{.GOLANGCI_LINT_VERSION}}
+        fi
+        
+        echo "Running linter with --fix option..."
+        golangci-lint run --fix
+        echo "Linting and fixing complete."
+
   fmt:
     desc: Format code
     silent: true
@@ -69,4 +97,37 @@ tasks:
       fi
       
       golangci-lint run
-    - echo "All code quality checks completed" 
+    - echo "All code quality checks completed"
+
+  all:
+    desc: "Run ALL quality checks (fmt, vet, and aggressive linting) and apply all available fixes"
+    silent: true
+    cmds:
+      - echo "Applying code formatting..."
+      - go fmt ./...
+      - echo "Running go vet analysis..."
+      - go vet ./...
+      - echo "Running aggressive linting and fixing..."
+      - |
+        SKIP_INSTALL={{.skip}}
+        FORCE={{.force}}
+        
+        INSTALL_LINT=true
+        if [ "$SKIP_INSTALL" = "true" ]; then
+          INSTALL_LINT=false
+        fi
+
+        if [ "$INSTALL_LINT" = "true" ] && [ "$FORCE" != "true" ]; then
+          if command -v golangci-lint &>/dev/null && [ "$(golangci-lint --version 2>/dev/null | awk -F'version ' '{print $2}' | awk '{print $1}')" = "$(echo "{{.GOLANGCI_LINT_VERSION}}" | sed 's/v//')" ]; then
+            INSTALL_LINT=false
+          fi
+        fi
+
+        if [ "$INSTALL_LINT" = "true" ]; then
+          echo "Installing golangci-lint@{{.GOLANGCI_LINT_VERSION}}..."
+          go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@{{.GOLANGCI_LINT_VERSION}}
+        fi
+        
+        # Run with aggressive flags to show and fix as much as possible
+        golangci-lint run --fix --max-issues-per-linter=0 --max-same-issues=0
+      - echo "✅ All quality checks and fixes have been applied." 
