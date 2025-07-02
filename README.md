@@ -46,24 +46,24 @@ A production-ready Go application boilerplate, engineered for performance, devel
 
 ### Core Libraries
 
-| Library                               | Description                               |
-| ------------------------------------- | ----------------------------------------- |
-| [`github.com/gin-gonic/gin`](https://github.com/gin-gonic/gin) | High-performance HTTP web framework. |
-| [`github.com/spf13/viper`](https://github.com/spf13/viper) | Complete configuration solution. |
-| [`github.com/rs/zerolog`](https://github.com/rs/zerolog) | Blazing fast, structured JSON logger. |
-| [`gorm.io/gorm`](https://github.com/go-gorm/gorm) | The fantastic ORM library for Go. |
-| [`gopkg.in/natefinch/lumberjack.v2`](https://github.com/natefinch/lumberjack) | Log rotation for file-based logging. |
+| Library                                                                       | Description                           |
+| ----------------------------------------------------------------------------- | ------------------------------------- |
+| [`github.com/gin-gonic/gin`](https://github.com/gin-gonic/gin)                | High-performance HTTP web framework.  |
+| [`github.com/spf13/viper`](https://github.com/spf13/viper)                    | Complete configuration solution.      |
+| [`github.com/rs/zerolog`](https://github.com/rs/zerolog)                      | Blazing fast, structured JSON logger. |
+| [`gorm.io/gorm`](https://github.com/go-gorm/gorm)                             | The fantastic ORM library for Go.     |
+| [`gopkg.in/natefinch/lumberjack.v2`](https://github.com/natefinch/lumberjack) | Log rotation for file-based logging.  |
 
 ### Development & Tooling
 
-| Tool | Description |
-|---|---|
-| [`github.com/air-verse/air`](https://github.com/air-verse/air) | Live-reloading for Go applications. |
-| [`gotest.tools/gotestsum`](https://github.com/gotestyourself/gotestsum) | 'go test' runner with custom output formatting. |
-| [`github.com/golangci/golangci-lint`](https://github.com/golangci/golangci-lint) | Fast Go linters runner. |
-| [`github.com/axw/gocov`](https://github.com/axw/gocov) | Coverage reporting tool. |
-| [`github.com/matm/gocov-html`](https://github.com/matm/gocov-html) | Generates HTML reports from `gocov` data. |
-| [`github.com/nikolaydubina/go-cover-treemap`](https://github.com/nikolaydubina/go-cover-treemap)| Generates visual treemaps for coverage. |
+| Tool                                                                                             | Description                                     |
+| ------------------------------------------------------------------------------------------------ | ----------------------------------------------- |
+| [`github.com/air-verse/air`](https://github.com/air-verse/air)                                   | Live-reloading for Go applications.             |
+| [`gotest.tools/gotestsum`](https://github.com/gotestyourself/gotestsum)                          | 'go test' runner with custom output formatting. |
+| [`github.com/golangci/golangci-lint`](https://github.com/golangci/golangci-lint)                 | Fast Go linters runner.                         |
+| [`github.com/axw/gocov`](https://github.com/axw/gocov)                                           | Coverage reporting tool.                        |
+| [`github.com/matm/gocov-html`](https://github.com/matm/gocov-html)                               | Generates HTML reports from `gocov` data.       |
+| [`github.com/nikolaydubina/go-cover-treemap`](https://github.com/nikolaydubina/go-cover-treemap) | Generates visual treemaps for coverage.         |
 
 ---
 
@@ -106,6 +106,70 @@ scaffold/
 
 ---
 
+## 🏛️ Architecture
+
+This project follows a classic layered architecture pattern to ensure separation of concerns, making it modular, scalable, and easy to maintain.
+
+```mermaid
+graph TD
+    subgraph "External"
+        Client("👤<br/>Client")
+    end
+
+    subgraph "Application Entry & Web Layer"
+        Router("🌐<br/>Gin Router")
+        Middleware("🛡️<br/>Middleware")
+        Handler("📥<br/>User Handler")
+    end
+
+    subgraph "Business Logic"
+        Service("业务<br/>User Service")
+    end
+
+    subgraph "Data Access Layer"
+        Repository("🗄️<br/>User Repository")
+        GORM("🐘<br/>GORM")
+        Database("💾<br/>Database")
+    end
+
+    subgraph "Shared Packages"
+        Config("⚙️<br/>Config (Viper)")
+        Logger("📝<br/>Logger (Zerolog)")
+        Model("📦<br/>User Model")
+    end
+
+    Client -- "HTTP Request" --> Router
+    Router -- "Routes" --> Middleware
+    Middleware -- "Next()" --> Handler
+    Handler -- "Calls" --> Service
+
+    Service -- "Uses" --> Repository
+    Service -- "Uses" --> Model
+
+    Repository -- "Uses" --> GORM
+    Repository -- "Uses" --> Model
+    GORM -- "SQL Queries" --> Database
+
+    Handler -- "HTTP Response" --> Client
+
+    Service -- "Logs with" --> Logger
+    Repository -- "Logs with" --> Logger
+    Handler -- "Logs with" --> Logger
+
+    Service -- "Reads" --> Config
+    Repository -- "Reads" --> Config
+    Router -- "Reads" --> Config
+```
+
+### Layer Descriptions
+
+- **Web Layer**: Receives and responds to HTTP requests. Includes the Gin router, middleware for cross-cutting concerns (like logging, CORS), and handlers for request parsing and validation.
+- **Business Logic (Service) Layer**: Contains the core application logic, orchestrates data from repositories, and implements business rules. It is completely decoupled from the web layer.
+- **Data Access (Repository) Layer**: Abstracts all database operations using GORM. It provides a clean API for the service layer to interact with the database without knowing the implementation details.
+- **Shared Packages**: Contains common utilities like configuration management (Viper), structured logging (Zerolog), and data models that are used across different layers.
+
+---
+
 ## 🏁 Getting Started
 
 ### Prerequisites
@@ -118,6 +182,7 @@ scaffold/
 ### Installation
 
 1.  **Clone the repository:**
+
     ```bash
     git clone https://github.com/thedatageek/scaffold.git
     cd scaffold
@@ -139,77 +204,77 @@ Run `task --list` for a quick overview or `task help:help` for detailed descript
 
 ### 📦 Build Tasks
 
-| Command                               | Description                                                     |
-| ------------------------------------- | --------------------------------------------------------------- |
-| `task build:build`                    | Build a development binary with debug symbols and race detection. |
-| `task build:build:release:linux`      | Build an optimized, compressed release binary for Linux.        |
-| `task build:build:release:darwin`     | Build an optimized, compressed release binary for macOS.        |
-| `task build:build:release:windows`    | Build an optimized, compressed release binary for Windows.      |
-| `task build:build:release:all`        | Build release binaries for all platforms.                       |
+| Command                            | Description                                                       |
+| ---------------------------------- | ----------------------------------------------------------------- |
+| `task build:build`                 | Build a development binary with debug symbols and race detection. |
+| `task build:build:release:linux`   | Build an optimized, compressed release binary for Linux.          |
+| `task build:build:release:darwin`  | Build an optimized, compressed release binary for macOS.          |
+| `task build:build:release:windows` | Build an optimized, compressed release binary for Windows.        |
+| `task build:build:release:all`     | Build release binaries for all platforms.                         |
 
 ### 🏃 Development Tasks
 
-| Command                 | Description                                         |
-| ----------------------- | --------------------------------------------------- |
-| `task dev:run`          | Run the application using `configs/local.yml`.      |
-| `task dev:run:prod`     | Run the application using `configs/prod.yml`.       |
-| `task dev:dev`          | Run with **hot-reloading** using `air`.                 |
+| Command             | Description                                    |
+| ------------------- | ---------------------------------------------- |
+| `task dev:run`      | Run the application using `configs/local.yml`. |
+| `task dev:run:prod` | Run the application using `configs/prod.yml`.  |
+| `task dev:dev`      | Run with **hot-reloading** using `air`.        |
 
 ### 🧪 Test Tasks
 
-| Command                           | Description                                                                  |
-| --------------------------------- | ---------------------------------------------------------------------------- |
-| `task test:test`                  | Run all tests using `gotestsum`.                                             |
-| `task test:test:unit`             | Run only unit tests.                                                         |
-| `task test:test:integration`      | Run only integration tests.                                                  |
-| `task test:test:race`             | Run tests with the race detector enabled.                                    |
-| `task test:test:benchmark`        | Run benchmark tests.                                                         |
-| `task test:test:coverage`         | Generate a standard HTML coverage report.                                    |
-| `task test:test:coverage:open`    | Generate **comprehensive coverage reports** (HTML, gocov, treemap) and open in browser. |
+| Command                        | Description                                                                             |
+| ------------------------------ | --------------------------------------------------------------------------------------- |
+| `task test:test`               | Run all tests using `gotestsum`.                                                        |
+| `task test:test:unit`          | Run only unit tests.                                                                    |
+| `task test:test:integration`   | Run only integration tests.                                                             |
+| `task test:test:race`          | Run tests with the race detector enabled.                                               |
+| `task test:test:benchmark`     | Run benchmark tests.                                                                    |
+| `task test:test:coverage`      | Generate a standard HTML coverage report.                                               |
+| `task test:test:coverage:open` | Generate **comprehensive coverage reports** (HTML, gocov, treemap) and open in browser. |
 
 ### 🔍 Code Quality Tasks
 
-| Command                    | Description                                  |
-| -------------------------- | -------------------------------------------- |
-| `task quality:lint`        | Run `golangci-lint` to find code issues.     |
-| `task quality:lint skip=true` | Run linter without checking/installing golangci-lint. |
-| `task quality:lint force=true`| Force reinstall golangci-lint and run linter. |
-| `task quality:fmt`         | Format all Go source files with `gofmt`.     |
-| `task quality:vet`         | Run `go vet` to analyze source code.         |
-| `task quality:check`       | Run all quality checks (`fmt`, `vet`, `lint`). |
+| Command                        | Description                                           |
+| ------------------------------ | ----------------------------------------------------- |
+| `task quality:lint`            | Run `golangci-lint` to find code issues.              |
+| `task quality:lint skip=true`  | Run linter without checking/installing golangci-lint. |
+| `task quality:lint force=true` | Force reinstall golangci-lint and run linter.         |
+| `task quality:fmt`             | Format all Go source files with `gofmt`.              |
+| `task quality:vet`             | Run `go vet` to analyze source code.                  |
+| `task quality:check`           | Run all quality checks (`fmt`, `vet`, `lint`).        |
 
 ### 🧹 Cleanup Tasks
 
-| Command                               | Description                                  |
-| ------------------------------------- | -------------------------------------------- |
-| `task clean:clean`                    | Clean all build artifacts and caches.        |
-| `task clean:clean:debug`              | Clean development build artifacts only.      |
-| `task clean:clean:release:linux`      | Clean Linux release build artifacts only.    |
-| `task clean:clean:release:darwin`     | Clean macOS release build artifacts only.    |
-| `task clean:clean:release:windows`    | Clean Windows release build artifacts only.  |
-| `task clean:clean:release:all`        | Clean all release build artifacts.           |
+| Command                            | Description                                 |
+| ---------------------------------- | ------------------------------------------- |
+| `task clean:clean`                 | Clean all build artifacts and caches.       |
+| `task clean:clean:debug`           | Clean development build artifacts only.     |
+| `task clean:clean:release:linux`   | Clean Linux release build artifacts only.   |
+| `task clean:clean:release:darwin`  | Clean macOS release build artifacts only.   |
+| `task clean:clean:release:windows` | Clean Windows release build artifacts only. |
+| `task clean:clean:release:all`     | Clean all release build artifacts.          |
 
 ### 📦 Dependency Management
 
-| Command                    | Description                                  |
-| -------------------------- | -------------------------------------------- |
-| `task deps:deps`           | Download and tidy Go module dependencies.    |
-| `task deps:deps:install`   | Install/update dependencies.                 |
-| `task deps:deps:update`    | Update all dependencies to the latest versions. |
+| Command                  | Description                                     |
+| ------------------------ | ----------------------------------------------- |
+| `task deps:deps`         | Download and tidy Go module dependencies.       |
+| `task deps:deps:install` | Install/update dependencies.                    |
+| `task deps:deps:update`  | Update all dependencies to the latest versions. |
 
 ### 🐳 Docker Tasks
 
-| Command                     | Description                                  |
-| --------------------------- | -------------------------------------------- |
-| `task docker:docker:build` | Build a production-ready Docker image.       |
-| `task docker:docker:run`   | Run the application in a Docker container.   |
+| Command                    | Description                                |
+| -------------------------- | ------------------------------------------ |
+| `task docker:docker:build` | Build a production-ready Docker image.     |
+| `task docker:docker:run`   | Run the application in a Docker container. |
 
 ### ⚙️ Configuration & Help
 
-| Command                           | Description                                  |
-| --------------------------------- | -------------------------------------------- |
-| `task config:config:validate`    | Validate all `.yml` files in the `configs` directory. |
-| `task help:help`                 | Show detailed help for all tasks.            |
+| Command                       | Description                                           |
+| ----------------------------- | ----------------------------------------------------- |
+| `task config:config:validate` | Validate all `.yml` files in the `configs` directory. |
+| `task help:help`              | Show detailed help for all tasks.                     |
 
 ---
 
@@ -222,7 +287,7 @@ This project features a **modular Taskfile structure** that organizes tasks into
 ```
 Taskfile.yml              # Main configuration with includes
 ├── tasks/build.yml        # Build operations
-├── tasks/clean.yml        # Cleanup operations  
+├── tasks/clean.yml        # Cleanup operations
 ├── tasks/config.yml       # Configuration validation
 ├── tasks/deps.yml         # Dependency management
 ├── tasks/dev.yml          # Development workflow
@@ -245,10 +310,11 @@ Taskfile.yml              # Main configuration with includes
 
 Application configuration is managed by `viper` and loaded from the `configs/` directory.
 
--   **`configs/local.yml`**: Used for local development (`task dev:run`, `task dev:dev`).
--   **`configs/prod.yml`**: Used for production runs (`task dev:run:prod`).
+- **`configs/local.yml`**: Used for local development (`task dev:run`, `task dev:dev`).
+- **`configs/prod.yml`**: Used for production runs (`task dev:run:prod`).
 
 You can specify a configuration file using the `--config` flag:
+
 ```bash
 go run ./cmd/server --config=configs/local.yml
 ```
@@ -262,20 +328,25 @@ The system also supports a `--validate-config` flag to check if a configuration 
 ### Development Build
 
 For a quick debug build with race detection enabled:
+
 ```bash
 task build:build
 ```
+
 This creates a binary at `build/debug/scaffold`.
 
 ### Production Release Builds
 
 To create highly optimized and compressed binaries for distribution:
+
 ```bash
 task build:build:release:all
 ```
+
 This generates binaries for Linux, macOS, and Windows in their respective `build/` subdirectories (e.g., `build/linux/scaffold-amd64-linux`).
 
 **Optimization Highlights:**
+
 - **Stripped Symbols (`-s -w`):** Removes debug information to reduce size.
 - **Static Linking:** Creates self-contained binaries where possible.
 - **UPX Compression:** Further compresses the binary, often resulting in an **80-85% size reduction**. A 10MB binary can become ~1.5MB.
@@ -287,15 +358,19 @@ This generates binaries for Linux, macOS, and Windows in their respective `build
 This boilerplate offers a rich testing and coverage experience.
 
 To run all tests:
+
 ```bash
 task test:test
 ```
 
 To generate and view the full suite of coverage reports:
+
 ```bash
 task test:test:coverage:open
 ```
+
 This command:
+
 1.  Runs tests and generates coverage data.
 2.  Creates three different reports in the `reports/` directory:
     - `coverage.html` (standard)
@@ -322,6 +397,7 @@ task quality:lint force=true
 ```
 
 The linter automatically:
+
 - Checks if the correct version is installed
 - Installs `golangci-lint` v2.2.0 if missing or outdated
 - Uses your project's `.golangci.yml` configuration
@@ -342,4 +418,4 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## 📜 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details. 
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
