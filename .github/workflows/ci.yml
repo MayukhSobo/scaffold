@@ -97,15 +97,15 @@ jobs:
 
       - name: Build for Linux
         if: matrix.goos == 'linux'
-        run: task build:build:release:linux
+        run: task build:release:linux
 
       - name: Build for macOS
         if: matrix.goos == 'darwin'
-        run: task build:build:release:darwin
+        run: task build:release:darwin
 
       - name: Build for Windows
         if: matrix.goos == 'windows'
-        run: task build:build:release:windows
+        run: task build:release:windows
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
