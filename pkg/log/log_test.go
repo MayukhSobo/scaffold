@@ -35,7 +35,7 @@ func TestConsoleWithWriter(t *testing.T) {
 
 func TestFile(t *testing.T) {
 	logFile := "test_file.log"
-	defer os.Remove(logFile) // Clean up
+	defer func() { _ = os.Remove(logFile) }() // Clean up
 
 	config := &FileLoggerConfig{
 		Filename:   logFile,
@@ -66,7 +66,7 @@ func TestMulti(t *testing.T) {
 	consoleLogger := NewConsoleLoggerWithWriter(InfoLevel, &consoleBuf, false)
 
 	logFile := "test_multi.log"
-	defer os.Remove(logFile)
+	defer func() { _ = os.Remove(logFile) }()
 
 	fileLogger := NewFileLogger(InfoLevel, &FileLoggerConfig{
 		Filename:   logFile,
@@ -185,7 +185,7 @@ func TestFileConfig(t *testing.T) {
 		JsonFormat: false,
 	}
 
-	defer os.Remove(config.Filename)
+	defer func() { _ = os.Remove(config.Filename) }()
 
 	logger := NewFileLogger(WarnLevel, config)
 	if logger == nil {
@@ -210,7 +210,7 @@ func TestInterface(t *testing.T) {
 
 	// Test file logger
 	logFile := "interface_test.log"
-	defer os.Remove(logFile)
+	defer func() { _ = os.Remove(logFile) }()
 
 	logger = NewFileLogger(InfoLevel, &FileLoggerConfig{
 		Filename:   logFile,
@@ -319,7 +319,7 @@ func TestParseLogLevel(t *testing.T) {
 
 func TestFileLoggerDebug(t *testing.T) {
 	logFile := "test_file_debug.log"
-	defer os.Remove(logFile) // Clean up
+	defer func() { _ = os.Remove(logFile) }() // Clean up
 
 	config := &FileLoggerConfig{
 		Filename:   logFile,
@@ -342,7 +342,7 @@ func TestFileLoggerDebug(t *testing.T) {
 
 func TestFileLoggerClose(t *testing.T) {
 	logFile := "test_file_close.log"
-	defer os.Remove(logFile)
+	defer func() { _ = os.Remove(logFile) }()
 
 	config := &FileLoggerConfig{Filename: logFile}
 	logger := NewFileLogger(InfoLevel, config)
@@ -364,7 +364,7 @@ func TestMultiLoggerDebug(t *testing.T) {
 	consoleLogger := NewConsoleLoggerWithWriter(DebugLevel, &consoleBuf, false)
 
 	logFile := "test_multi_debug.log"
-	defer os.Remove(logFile)
+	defer func() { _ = os.Remove(logFile) }()
 	fileLogger := NewFileLogger(DebugLevel, &FileLoggerConfig{Filename: logFile})
 
 	multiLogger := NewMultiLogger(consoleLogger, fileLogger)
@@ -396,7 +396,7 @@ func TestLoggerWithEmptyFields(t *testing.T) {
 
 func TestNewFileLoggerDefaults(t *testing.T) {
 	logFile := "test_defaults.log"
-	defer os.Remove(logFile)
+	defer func() { _ = os.Remove(logFile) }()
 
 	// Test with empty config to check defaults
 	config := &FileLoggerConfig{Filename: logFile}
@@ -420,19 +420,3 @@ func TestNewFileLoggerDefaults(t *testing.T) {
 }
 
 // Simple mock logger for testing
-type mockLogger struct {
-	level Level
-}
-
-func (m *mockLogger) Debug(msg string, fields ...Field) {}
-func (m *mockLogger) Info(msg string, fields ...Field)  {}
-func (m *mockLogger) Warn(msg string, fields ...Field)  {}
-func (m *mockLogger) Error(msg string, fields ...Field) {}
-func (m *mockLogger) Fatal(msg string, fields ...Field) {}
-func (m *mockLogger) Panic(msg string, fields ...Field) {}
-func (m *mockLogger) WithFields(fields ...Field) Logger {
-	return m
-}
-func (m *mockLogger) WithContext(ctx context.Context) Logger {
-	return m
-}

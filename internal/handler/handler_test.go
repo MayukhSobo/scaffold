@@ -16,6 +16,7 @@ func TestNewHandler(t *testing.T) {
 
 	if handler == nil {
 		t.Error("NewHandler() returned nil")
+		return
 	}
 
 	if handler.logger == nil {

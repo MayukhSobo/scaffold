@@ -45,6 +45,7 @@ func TestUserRepositoryFirstById(t *testing.T) {
 
 	if user == nil {
 		t.Error("FirstById() returned nil user")
+		return
 	}
 
 	// Since this is a mock implementation, we expect an empty user

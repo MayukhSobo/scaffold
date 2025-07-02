@@ -16,6 +16,7 @@ func TestNewService(t *testing.T) {
 
 	if service == nil {
 		t.Error("NewService() returned nil")
+		return
 	}
 
 	if service.logger == nil {

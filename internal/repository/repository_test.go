@@ -21,6 +21,7 @@ func TestNewRepository(t *testing.T) {
 
 	if repo == nil {
 		t.Error("NewRepository() returned nil")
+		return
 	}
 
 	if repo.db != db {

@@ -9,9 +9,8 @@ func TestUserStruct(t *testing.T) {
 	var user User
 
 	// Since User struct appears to be empty, just test that it can be created
-	if &user == nil {
-		t.Error("User struct should be creatable")
-	}
+	// Note: The address of a stack variable is never nil
+	_ = user // Use the variable to avoid unused warnings
 }
 
 func TestUserZeroValue(t *testing.T) {
@@ -29,9 +28,8 @@ func TestUserPointer(t *testing.T) {
 	// Test User pointer operations
 	user := &User{}
 
-	if user == nil {
-		t.Error("User pointer should not be nil")
-	}
+	// Note: The address returned by &User{} is never nil
+	_ = user // Use the variable to verify it was created
 }
 
 func TestUserFieldTypes(t *testing.T) {
