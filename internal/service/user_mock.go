@@ -1,8 +1,9 @@
 package service
 
 import (
-	"github.com/MayukhSobo/scaffold/internal/model"
 	"gorm.io/gorm"
+
+	"github.com/MayukhSobo/scaffold/internal/model"
 )
 
 // MockUserService is a mock implementation of UserService for testing.

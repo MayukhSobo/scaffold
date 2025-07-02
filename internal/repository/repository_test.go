@@ -2,8 +2,9 @@ package repository
 
 import (
 	"bytes"
-	"github.com/MayukhSobo/scaffold/pkg/log"
 	"testing"
+
+	"github.com/MayukhSobo/scaffold/pkg/log"
 
 	"gorm.io/gorm"
 )
@@ -40,7 +41,7 @@ func TestNewDb(t *testing.T) {
 	}
 
 	// Since this is a mock implementation, just verify it returns a *gorm.DB
-	var dbInterface *gorm.DB = db
+	var dbInterface = db
 	if dbInterface != db {
 		t.Error("NewDb() did not return correct type")
 	}

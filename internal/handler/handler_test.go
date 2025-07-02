@@ -2,8 +2,9 @@ package handler
 
 import (
 	"bytes"
-	"github.com/MayukhSobo/scaffold/pkg/log"
 	"testing"
+
+	"github.com/MayukhSobo/scaffold/pkg/log"
 )
 
 func TestNewHandler(t *testing.T) {

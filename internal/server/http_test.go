@@ -37,7 +37,7 @@ func TestNewServerHTTP(t *testing.T) {
 	}
 
 	// Test that it returns a gin.Engine
-	var ginEngine *gin.Engine = engine
+	var ginEngine = engine
 	if ginEngine != engine {
 		t.Error("NewServerHTTP() did not return correct type")
 	}

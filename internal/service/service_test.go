@@ -2,8 +2,9 @@ package service
 
 import (
 	"bytes"
-	"github.com/MayukhSobo/scaffold/pkg/log"
 	"testing"
+
+	"github.com/MayukhSobo/scaffold/pkg/log"
 )
 
 func TestNewService(t *testing.T) {

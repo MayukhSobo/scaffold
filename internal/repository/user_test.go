@@ -2,8 +2,9 @@ package repository
 
 import (
 	"bytes"
-	"github.com/MayukhSobo/scaffold/pkg/log"
 	"testing"
+
+	"github.com/MayukhSobo/scaffold/pkg/log"
 
 	"gorm.io/gorm"
 )
@@ -23,7 +24,7 @@ func TestNewUserRepository(t *testing.T) {
 	}
 
 	// Test that it implements UserRepository interface
-	var _ UserRepository = userRepo
+	var _ = userRepo
 }
 
 func TestUserRepositoryFirstById(t *testing.T) {
@@ -62,7 +63,7 @@ func TestUserRepositoryInterface(t *testing.T) {
 	userRepo := NewUserRepository(repo)
 
 	// Test interface compliance
-	var userRepoInterface UserRepository = userRepo
+	var userRepoInterface = userRepo
 	if userRepoInterface == nil {
 		t.Error("userRepository does not implement UserRepository interface")
 	}

@@ -2,9 +2,10 @@ package service
 
 import (
 	"bytes"
+	"testing"
+
 	"github.com/MayukhSobo/scaffold/internal/repository"
 	"github.com/MayukhSobo/scaffold/pkg/log"
-	"testing"
 
 	"gorm.io/gorm"
 )
@@ -27,7 +28,7 @@ func TestNewUserService(t *testing.T) {
 	}
 
 	// Test that it implements UserService interface
-	var _ UserService = userService
+	var _ = userService
 }
 
 func TestUserServiceGetUserById(t *testing.T) {
@@ -69,7 +70,7 @@ func TestUserServiceInterface(t *testing.T) {
 	userService := NewUserService(service, userRepo)
 
 	// Test interface compliance
-	var serviceInterface UserService = userService
+	var serviceInterface = userService
 	if serviceInterface == nil {
 		t.Error("userService does not implement UserService interface")
 	}

@@ -39,7 +39,7 @@ func TestUserFieldTypes(t *testing.T) {
 	user := User{}
 
 	// Test that it's the correct type
-	var userInterface User = user
+	var userInterface = user
 	if userInterface != user {
 		t.Error("Type assertion failed")
 	}

@@ -5,10 +5,11 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/MayukhSobo/scaffold/pkg/utils"
 	"github.com/rs/zerolog"
 	"github.com/spf13/viper"
 	"gopkg.in/natefinch/lumberjack.v2"
+
+	"github.com/MayukhSobo/scaffold/pkg/utils"
 )
 
 // FileLoggerConfig contains configuration for file logging with rotation.
