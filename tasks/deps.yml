@@ -71,3 +71,15 @@ tasks:
     - |
       echo "Checking for outdated dependencies..."
       go list -u -m all | grep -E '\[.*\]' || echo "All dependencies are up to date"
+
+  vulnerabilities:
+    desc: Check for security vulnerabilities in dependencies
+    silent: true
+    cmds:
+    - |
+      echo "Checking for security vulnerabilities..."
+      if ! command -v govulncheck &> /dev/null; then
+        echo "Installing govulncheck..."
+        go install golang.org/x/vuln/cmd/govulncheck@latest
+      fi
+      govulncheck ./...
