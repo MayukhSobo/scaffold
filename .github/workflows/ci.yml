@@ -135,9 +135,7 @@ jobs:
         run: task deps:install
 
       - name: Run Gosec Security Scanner
-        uses: securego/gosec@master
-        with:
-          args: "./..."
+        run: task quality:gosec
 
       - name: Check for vulnerabilities
         run: task deps:vulnerabilities

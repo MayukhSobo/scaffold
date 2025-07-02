@@ -27,7 +27,7 @@ func ResolveLogFilePath(directory, filename string) string {
 
 // EnsureLogDirectory creates the log directory if it doesn't exist.
 func EnsureLogDirectory(dir string) error {
-	if err := os.MkdirAll(dir, 0755); err != nil {
+	if err := os.MkdirAll(dir, 0750); err != nil {
 		return fmt.Errorf("failed to create log directory %s: %w", dir, err)
 	}
 	return nil

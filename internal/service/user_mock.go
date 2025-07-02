@@ -17,8 +17,16 @@ func (m *MockUserService) GetUserById(id int64) (*model.User, error) {
 		return m.GetUserByIdFunc(id)
 	}
 	// Default mock behavior
+	// Safely convert int64 to uint to prevent overflow
+	var userID uint
+	if id < 0 || id > int64(^uint(0)>>1) {
+		userID = 1 // Default safe ID for mock
+	} else {
+		userID = uint(id)
+	}
+
 	return &model.User{
-		Model:    gorm.Model{ID: uint(id)},
+		Model:    gorm.Model{ID: userID},
 		Username: "mock.user",
 	}, nil
 }
