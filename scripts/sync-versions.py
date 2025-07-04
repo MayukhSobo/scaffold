@@ -5,53 +5,22 @@ sync-versions.py - Synchronize versions from versions.yml across all project fil
 Usage: python sync-versions.py [--dry-run] [--verbose]
 """
 
-import os
-import sys
 import re
 import argparse
 from pathlib import Path
 from typing import List, Dict, Optional, Tuple, Set
-import subprocess
 
-try:
-    from rich.console import Console
-    from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TaskProgressColumn
-    from rich.panel import Panel
-    from rich.table import Table
-    from rich.text import Text
-    from rich import print as rprint
-    HAS_RICH = True
-except ImportError:
-    HAS_RICH = False
+# Import common utilities
+from common import ScriptBase, has_rich, get_console
 
-# Import our version helper
-scripts_dir = Path(__file__).parent
-sys.path.insert(0, str(scripts_dir))
-try:
-    from version_helper import get_version, load_versions_file, list_versions
-except ImportError:
-    # If running through run.py, try different import
-    import importlib.util
-    spec = importlib.util.spec_from_file_location("version_helper", scripts_dir / "version-helper.py")
-    version_helper = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(version_helper)
-    get_version = version_helper.get_version
-    load_versions_file = version_helper.load_versions_file
-    list_versions = version_helper.list_versions
-
-# Initialize console
-console = Console() if HAS_RICH else None
-
-class VersionSyncer:
+class VersionSyncer(ScriptBase):
     """Version synchronization manager with rich output"""
     
     def __init__(self, dry_run: bool = False, verbose: bool = False):
-        self.dry_run = dry_run
+        super().__init__("VersionSyncer", dry_run)
         self.verbose = verbose
-        self.project_root = Path(__file__).parent.parent
-        self.versions = load_versions_file()
+        self.versions = self.version_helper.load_versions_file()
         self.changes_made = []
-        self.errors = []
         
         # Define file patterns and their sync rules
         self.sync_rules = {
@@ -118,65 +87,17 @@ class VersionSyncer:
             ]
         }
     
-    def _log_info(self, message: str):
-        """Log info message"""
-        if HAS_RICH:
-            console.print(f"✅ {message}", style="green")
-        else:
-            print(f"[INFO] {message}")
-    
-    def _log_warn(self, message: str):
-        """Log warning message"""
-        if HAS_RICH:
-            console.print(f"⚠️  {message}", style="yellow")
-        else:
-            print(f"[WARN] {message}")
-    
-    def _log_error(self, message: str):
-        """Log error message"""
-        if HAS_RICH:
-            console.print(f"❌ {message}", style="red")
-        else:
-            print(f"[ERROR] {message}")
-        self.errors.append(message)
-    
-    def _log_verbose(self, message: str):
-        """Log verbose message"""
-        if self.verbose:
-            if HAS_RICH:
-                console.print(f"ℹ️  {message}", style="blue")
-            else:
-                print(f"[VERBOSE] {message}")
-    
-    def _read_file(self, file_path: Path) -> Optional[str]:
-        """Read file content"""
-        try:
-            return file_path.read_text(encoding='utf-8')
-        except Exception as e:
-            self._log_error(f"Failed to read {file_path}: {e}")
-            return None
-    
-    def _write_file(self, file_path: Path, content: str):
-        """Write file content"""
-        if self.dry_run:
-            self._log_verbose(f"Would write {file_path}")
-            return
-        
-        try:
-            file_path.write_text(content, encoding='utf-8')
-            self._log_verbose(f"Updated {file_path}")
-        except Exception as e:
-            self._log_error(f"Failed to write {file_path}: {e}")
+
     
     def _sync_file(self, file_path: Path, rules: List[Dict]) -> bool:
         """Sync versions in a single file"""
         relative_path = file_path.relative_to(self.project_root)
         
         if not file_path.exists():
-            self._log_warn(f"File not found: {relative_path}")
+            self.logger.warn(f"File not found: {relative_path}")
             return False
         
-        content = self._read_file(file_path)
+        content = self.file_manager.read_file(file_path)
         if content is None:
             return False
         
@@ -189,7 +110,7 @@ class VersionSyncer:
             replacement_func = rule['replacement']
             
             try:
-                expected_version = get_version(version_key)
+                expected_version = self.version_helper.get_version(version_key)
                 
                 def replace_match(match):
                     old_version = match.group(1)
@@ -205,11 +126,11 @@ class VersionSyncer:
                 content = re.sub(pattern, replace_match, content)
                 
             except Exception as e:
-                self._log_error(f"Error processing {version_key} in {relative_path}: {e}")
+                self.logger.error(f"Error processing {version_key} in {relative_path}: {e}")
                 continue
         
         if changes_in_file:
-            self._write_file(file_path, content)
+            self.file_manager.write_file(file_path, content)
             self.changes_made.extend([{
                 'file': str(relative_path),
                 'changes': changes_in_file
@@ -220,26 +141,21 @@ class VersionSyncer:
     
     def sync_all_files(self) -> bool:
         """Sync versions across all configured files"""
-        if HAS_RICH:
-            panel = Panel(
-                "Synchronizing versions from versions.yml",
-                title="🔄 Version Synchronization",
-                title_align="left"
-            )
-            console.print(panel)
-            
-            if self.dry_run:
-                console.print("🔍 [bold yellow]DRY RUN MODE[/bold yellow] - No files will be modified")
-                console.print()
-        else:
-            print("Synchronizing versions from versions.yml")
-            if self.dry_run:
-                print("DRY RUN MODE - No files will be modified")
+        self.rich.print_panel(
+            "Synchronizing versions from versions.yml",
+            title="🔄 Version Synchronization"
+        )
+        
+        if self.dry_run:
+            self.rich.print_dry_run_warning()
         
         total_files = len(self.sync_rules)
         files_changed = 0
         
-        if HAS_RICH:
+        if has_rich():
+            console = get_console()
+            from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TaskProgressColumn
+            
             with Progress(
                 SpinnerColumn(),
                 TextColumn("[bold blue]{task.description}"),
@@ -260,17 +176,21 @@ class VersionSyncer:
         else:
             for file_path, rules in self.sync_rules.items():
                 full_path = self.project_root / file_path
-                print(f"Syncing {file_path}...")
+                self.logger.verbose(f"Syncing {file_path}...", self.verbose)
                 
                 if self._sync_file(full_path, rules):
                     files_changed += 1
         
         self._show_summary(files_changed, total_files)
-        return len(self.errors) == 0
+        return not self.has_errors()
     
     def _show_summary(self, files_changed: int, total_files: int):
         """Show synchronization summary"""
-        if HAS_RICH:
+        if has_rich():
+            console = get_console()
+            from rich.table import Table
+            from rich.panel import Panel
+            
             if self.changes_made:
                 # Create a table of changes
                 table = Table(title="📝 Changes Made")
@@ -307,9 +227,9 @@ class VersionSyncer:
                     style="blue"
                 ))
             
-            if self.errors:
+            if self.has_errors():
                 console.print(Panel(
-                    f"❌ {len(self.errors)} errors occurred during synchronization",
+                    f"❌ {len(self.get_errors())} errors occurred during synchronization",
                     title="⚠️  Errors",
                     style="red"
                 ))
@@ -320,20 +240,15 @@ class VersionSyncer:
             else:
                 print(f"ℹ️  All {total_files} files are already up to date")
             
-            if self.errors:
-                print(f"❌ {len(self.errors)} errors occurred during synchronization")
+            if self.has_errors():
+                print(f"❌ {len(self.get_errors())} errors occurred during synchronization")
     
     def check_consistency(self) -> bool:
         """Check version consistency across all files"""
-        if HAS_RICH:
-            panel = Panel(
-                "Checking version consistency across all files",
-                title="🔍 Consistency Check",
-                title_align="left"
-            )
-            console.print(panel)
-        else:
-            print("Checking version consistency across all files")
+        self.rich.print_panel(
+            "Checking version consistency across all files",
+            title="🔍 Consistency Check"
+        )
         
         inconsistencies = []
         
@@ -344,7 +259,7 @@ class VersionSyncer:
             if not full_path.exists():
                 continue
             
-            content = self._read_file(full_path)
+            content = self.file_manager.read_file(full_path)
             if content is None:
                 continue
             
@@ -353,7 +268,7 @@ class VersionSyncer:
                 version_key = rule['version_key']
                 
                 try:
-                    expected_version = get_version(version_key)
+                    expected_version = self.version_helper.get_version(version_key)
                     matches = re.findall(pattern, content)
                     
                     for match in matches:
@@ -366,10 +281,14 @@ class VersionSyncer:
                             })
                 
                 except Exception as e:
-                    self._log_error(f"Error checking {version_key} in {relative_path}: {e}")
+                    self.logger.error(f"Error checking {version_key} in {relative_path}: {e}")
         
         if inconsistencies:
-            if HAS_RICH:
+            if has_rich():
+                console = get_console()
+                from rich.table import Table
+                from rich.panel import Panel
+                
                 table = Table(title="🚨 Version Inconsistencies Found")
                 table.add_column("File", style="cyan", no_wrap=True)
                 table.add_column("Version Key", style="yellow")
@@ -397,19 +316,18 @@ class VersionSyncer:
                     print(f"  {inconsistency['file']}: {inconsistency['version_key']} "
                           f"= {inconsistency['found_version']} (expected: {inconsistency['expected_version']})")
         else:
-            if HAS_RICH:
-                console.print(Panel(
-                    "✅ All versions are consistent across all files",
-                    title="🎉 All Good!",
-                    style="green"
-                ))
-            else:
-                print("✅ All versions are consistent across all files")
+            self.rich.print_panel(
+                "✅ All versions are consistent across all files",
+                title="🎉 All Good!",
+                style="green"
+            )
         
         return len(inconsistencies) == 0
 
 def main():
     """Main entry point"""
+    import sys
+    
     parser = argparse.ArgumentParser(description='Synchronize versions from versions.yml')
     parser.add_argument('--dry-run', action='store_true', help='Show what would be changed without making changes')
     parser.add_argument('--verbose', '-v', action='store_true', help='Enable verbose output')
@@ -417,17 +335,15 @@ def main():
     
     args = parser.parse_args()
     
-    if HAS_RICH:
-        console.print(Panel(
-            "Version Synchronization Tool",
-            subtitle="Keeping all project versions in sync",
-            style="bold blue"
-        ))
-    else:
-        print("Version Synchronization Tool")
-        print("Keeping all project versions in sync")
-    
+    # Create syncer instance
     syncer = VersionSyncer(dry_run=args.dry_run, verbose=args.verbose)
+    
+    # Show header
+    syncer.rich.print_panel(
+        "Version Synchronization Tool",
+        title="Keeping all project versions in sync",
+        style="bold blue"
+    )
     
     if args.check:
         success = syncer.check_consistency()
@@ -435,7 +351,9 @@ def main():
         success = syncer.sync_all_files()
     
     if not success:
-        sys.exit(1)
+        syncer.exit_with_error()
+    else:
+        syncer.exit_with_success()
 
 if __name__ == '__main__':
     main() 

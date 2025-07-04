@@ -21,7 +21,7 @@ task python
 # or
 task shared:setup:python
 
-# Show activation instructions
+# Show shell-specific activation instructions
 task shared:setup:python:activate
 ```
 
@@ -40,8 +40,16 @@ The setup process:
 ### Manual Activation
 
 ```bash
-# Activate the virtual environment
-source .venv/bin/activate
+# Show shell-specific activation instructions
+task shared:setup:python:activate
+
+# Quick activation (Bash/Zsh)
+eval "$(task shared:setup:python:activate:cmd)"
+
+# Or activate manually based on your shell:
+# Bash/Zsh: source .venv/bin/activate
+# Fish: source .venv/bin/activate.fish
+# C shell: source .venv/bin/activate.csh
 
 # Now scripts use enhanced features
 python scripts/version-helper.py list

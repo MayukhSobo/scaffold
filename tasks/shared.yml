@@ -15,6 +15,25 @@ tasks:
     silent: true
     cmds:
     - |
+      if [ ! -d ".venv" ]; then
+        echo "❌ Virtual environment not found. Run 'task shared:setup:python' first."
+        exit 1
+      fi
+      
+      # Activate virtual environment
+      SHELL_NAME=$(basename "$SHELL")
+      case "$SHELL_NAME" in
+        "fish")
+          [ -f ".venv/bin/activate.fish" ] && source .venv/bin/activate.fish || source .venv/bin/activate
+          ;;
+        "csh" | "tcsh")
+          [ -f ".venv/bin/activate.csh" ] && source .venv/bin/activate.csh || source .venv/bin/activate
+          ;;
+        *)
+          source .venv/bin/activate
+          ;;
+      esac
+      
       if [ -n "{{.CLI_ARGS}}" ]; then
         python scripts/run.py install-tools "{{.CLI_ARGS}}"
       else
@@ -91,29 +110,129 @@ tasks:
       # Show activation instructions
       echo ""
       echo "🎯 Python virtual environment setup complete!"
-      echo "To activate the environment manually, run:"
-      echo "  source .venv/bin/activate"
+      echo ""
+      echo "To activate the environment, run:"
+      echo "  task shared:setup:python:activate"
+
+  setup:python:get-activation-cmd:
+    desc: Get shell-specific activation command (internal helper)
+    silent: true
+    internal: true
+    cmds:
+    - |
+      if [ ! -d ".venv" ]; then
+        return 1
+      fi
+      
+      SHELL_NAME=$(basename "$SHELL")
+      
+      case "$SHELL_NAME" in
+        "fish")
+          if [ -f ".venv/bin/activate.fish" ]; then
+            echo "source .venv/bin/activate.fish"
+          else
+            echo "source .venv/bin/activate"
+          fi
+          ;;
+        "csh" | "tcsh")
+          if [ -f ".venv/bin/activate.csh" ]; then
+            echo "source .venv/bin/activate.csh"
+          else
+            echo "source .venv/bin/activate"
+          fi
+          ;;
+        *)
+          echo "source .venv/bin/activate"
+          ;;
+      esac
+
+  setup:python:show-activation:
+    desc: Show shell-specific activation instructions (internal helper)
+    silent: true
+    internal: true
+    cmds:
+    - |
+      if [ ! -d ".venv" ]; then
+        echo "❌ Virtual environment not found. Run 'task shared:setup:python' first."
+        return 1
+      fi
+      
+      # Detect shell and provide appropriate activation command
+      SHELL_NAME=$(basename "$SHELL")
+      
+      case "$SHELL_NAME" in
+        "fish")
+          if [ -f ".venv/bin/activate.fish" ]; then
+            echo "🐟 To activate in Fish shell, run:"
+            echo "  source .venv/bin/activate.fish"
+          else
+            echo "To activate the environment manually, run:"
+            echo "  source .venv/bin/activate"
+          fi
+          ;;
+        "csh" | "tcsh")
+          if [ -f ".venv/bin/activate.csh" ]; then
+            echo "🐚 To activate in C shell, run:"
+            echo "  source .venv/bin/activate.csh"
+          else
+            echo "To activate the environment manually, run:"
+            echo "  source .venv/bin/activate"
+          fi
+          ;;
+        "powershell" | "pwsh")
+          echo "⚡ To activate in PowerShell, run:"
+          echo "  .venv/Scripts/Activate.ps1"
+          ;;
+        "cmd")
+          echo "🖥️  To activate in Command Prompt, run:"
+          echo "  .venv\\Scripts\\activate.bat"
+          ;;
+        *)
+          echo "🐚 To activate in Bash/Zsh shell, run:"
+          echo "  source .venv/bin/activate"
+          echo ""
+          echo "💡 Or use: eval \"\$(task shared:setup:python:activate:cmd)\""
+          ;;
+      esac
+      
       echo ""
       echo "To deactivate when done:"
       echo "  deactivate"
 
   setup:python:activate:
-    desc: Show instructions to activate Python virtual environment
+    desc: Show shell-specific Python virtual environment activation instructions
     silent: true
     cmds:
     - |
-      if [ -d ".venv" ]; then
-        echo "🐍 Python virtual environment is ready!"
-        echo "To activate it, run:"
-        echo "  source .venv/bin/activate"
-        echo ""
-        echo "After activation, you can:"
-        echo "  - Use enhanced YAML parsing with PyYAML"
-        echo "  - Run Python scripts with dependencies"
-        echo "  - Install additional packages with pip"
-      else
+      if [ ! -d ".venv" ]; then
         echo "❌ Virtual environment not found. Run 'task shared:setup:python' first."
+        exit 1
       fi
+      
+      SHELL_NAME=$(basename "$SHELL")
+      echo "🐍 Python virtual environment found!"
+      echo "Detected shell: $SHELL_NAME"
+      echo ""
+    - task: setup:python:show-activation
+    - |
+      echo ""
+      echo "After activation, you can:"
+      echo "  - Use enhanced YAML parsing with PyYAML"
+      echo "  - Run Python scripts with rich formatting"
+      echo "  - Install additional packages with pip"
+
+
+
+  setup:python:activate:cmd:
+    desc: Output activation command for current shell (for use with eval)
+    silent: true
+    cmds:
+    - |
+      if [ ! -d ".venv" ]; then
+        echo "echo '❌ Virtual environment not found. Run task shared:setup:python first.'"
+        exit 1
+      fi
+    - task: setup:python:get-activation-cmd
 
   # Common validation tasks
   validate:go:
@@ -173,27 +292,107 @@ tasks:
     desc: Show all current versions from versions.yml
     silent: true
     cmds:
-    - python scripts/run.py version-helper list
+    - |
+      if [ ! -d ".venv" ]; then
+        echo "❌ Virtual environment not found. Run 'task shared:setup:python' first."
+        exit 1
+      fi
+      
+      # Activate virtual environment
+      SHELL_NAME=$(basename "$SHELL")
+      case "$SHELL_NAME" in
+        "fish")
+          [ -f ".venv/bin/activate.fish" ] && source .venv/bin/activate.fish || source .venv/bin/activate
+          ;;
+        "csh" | "tcsh")
+          [ -f ".venv/bin/activate.csh" ] && source .venv/bin/activate.csh || source .venv/bin/activate
+          ;;
+        *)
+          source .venv/bin/activate
+          ;;
+      esac
+      
+      python scripts/run.py version-helper list
 
   version:sync:
     desc: Sync versions from versions.yml to all files
     silent: true
     cmds:
-    - python scripts/run.py sync-versions
-    - echo "✅ Versions synchronized"
+    - |
+      if [ ! -d ".venv" ]; then
+        echo "❌ Virtual environment not found. Run 'task shared:setup:python' first."
+        exit 1
+      fi
+      
+      # Activate virtual environment
+      SHELL_NAME=$(basename "$SHELL")
+      case "$SHELL_NAME" in
+        "fish")
+          [ -f ".venv/bin/activate.fish" ] && source .venv/bin/activate.fish || source .venv/bin/activate
+          ;;
+        "csh" | "tcsh")
+          [ -f ".venv/bin/activate.csh" ] && source .venv/bin/activate.csh || source .venv/bin/activate
+          ;;
+        *)
+          source .venv/bin/activate
+          ;;
+      esac
+      
+      python scripts/run.py sync-versions
+      echo "✅ Versions synchronized"
 
   version:sync:dry-run:
     desc: Show what would be changed by version sync
     silent: true
     cmds:
-    - python scripts/run.py sync-versions --dry-run
+    - |
+      if [ ! -d ".venv" ]; then
+        echo "❌ Virtual environment not found. Run 'task shared:setup:python' first."
+        exit 1
+      fi
+      
+      # Activate virtual environment
+      SHELL_NAME=$(basename "$SHELL")
+      case "$SHELL_NAME" in
+        "fish")
+          [ -f ".venv/bin/activate.fish" ] && source .venv/bin/activate.fish || source .venv/bin/activate
+          ;;
+        "csh" | "tcsh")
+          [ -f ".venv/bin/activate.csh" ] && source .venv/bin/activate.csh || source .venv/bin/activate
+          ;;
+        *)
+          source .venv/bin/activate
+          ;;
+      esac
+      
+      python scripts/run.py sync-versions --dry-run
 
   version:check:
     desc: Check version consistency across all files
     silent: true
     cmds:
-    - python scripts/run.py sync-versions --check
-    - echo "✅ Version consistency checked"
+    - |
+      if [ ! -d ".venv" ]; then
+        echo "❌ Virtual environment not found. Run 'task shared:setup:python' first."
+        exit 1
+      fi
+      
+      # Activate virtual environment
+      SHELL_NAME=$(basename "$SHELL")
+      case "$SHELL_NAME" in
+        "fish")
+          [ -f ".venv/bin/activate.fish" ] && source .venv/bin/activate.fish || source .venv/bin/activate
+          ;;
+        "csh" | "tcsh")
+          [ -f ".venv/bin/activate.csh" ] && source .venv/bin/activate.csh || source .venv/bin/activate
+          ;;
+        *)
+          source .venv/bin/activate
+          ;;
+      esac
+      
+      python scripts/run.py sync-versions --check
+      echo "✅ Version consistency checked"
 
   # Common info tasks
   info:environment:

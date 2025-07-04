@@ -34,11 +34,65 @@ vars:
 
   # Get versions from versions.yml
   GO_VERSION:
-    sh: python scripts/run.py version-helper get go
+    sh: |
+      if [ -d ".venv" ]; then
+        # Activate virtual environment
+        SHELL_NAME=$(basename "$SHELL")
+        case "$SHELL_NAME" in
+          "fish")
+            [ -f ".venv/bin/activate.fish" ] && source .venv/bin/activate.fish 2>/dev/null || source .venv/bin/activate
+            ;;
+          "csh" | "tcsh")
+            [ -f ".venv/bin/activate.csh" ] && source .venv/bin/activate.csh || source .venv/bin/activate
+            ;;
+          *)
+            source .venv/bin/activate
+            ;;
+        esac
+        python scripts/run.py version-helper get go 2>/dev/null || echo "1.24.4"
+      else
+        echo "1.24.4"
+      fi
   GOLANGCI_LINT_VERSION:
-    sh: python scripts/run.py version-helper get tools.golangci-lint
+    sh: |
+      if [ -d ".venv" ]; then
+        # Activate virtual environment
+        SHELL_NAME=$(basename "$SHELL")
+        case "$SHELL_NAME" in
+          "fish")
+            [ -f ".venv/bin/activate.fish" ] && source .venv/bin/activate.fish 2>/dev/null || source .venv/bin/activate
+            ;;
+          "csh" | "tcsh")
+            [ -f ".venv/bin/activate.csh" ] && source .venv/bin/activate.csh || source .venv/bin/activate
+            ;;
+          *)
+            source .venv/bin/activate
+            ;;
+        esac
+        python scripts/run.py version-helper get tools.golangci-lint 2>/dev/null || echo "v2.2.1"
+      else
+        echo "v2.2.1"
+      fi
   TASK_VERSION:
-    sh: python scripts/run.py version-helper get build.task
+    sh: |
+      if [ -d ".venv" ]; then
+        # Activate virtual environment
+        SHELL_NAME=$(basename "$SHELL")
+        case "$SHELL_NAME" in
+          "fish")
+            [ -f ".venv/bin/activate.fish" ] && source .venv/bin/activate.fish 2>/dev/null || source .venv/bin/activate
+            ;;
+          "csh" | "tcsh")
+            [ -f ".venv/bin/activate.csh" ] && source .venv/bin/activate.csh || source .venv/bin/activate
+            ;;
+          *)
+            source .venv/bin/activate
+            ;;
+        esac
+        python scripts/run.py version-helper get build.task 2>/dev/null || echo "3.x"
+      else
+        echo "3.x"
+      fi
   VERSION:
     sh: git describe --tags --always --dirty 2>/dev/null || echo "v1.0.0"
   BUILD_TIME:

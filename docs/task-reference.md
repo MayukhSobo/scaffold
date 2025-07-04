@@ -130,7 +130,7 @@ task setup
 | `task shared:setup` | Setup development environment |
 | `task shared:setup:tools` | Install development tools |
 | `task shared:setup:python` | Setup Python virtual environment |
-| `task shared:setup:python:activate` | Show Python venv activation instructions |
+| `task shared:setup:python:activate` | Show shell-specific Python venv activation instructions |
 | `task shared:validate:go` | Validate Go environment |
 | `task shared:validate:docker` | Validate Docker environment |
 | `task shared:validate:python` | Validate Python environment |
