@@ -35,7 +35,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: "1.24.4"  # Updated from versions.yml via version-helper.sh
+          go-version: '1.24.4'  # Updated from versions.yml via version-helper.sh
 
       - name: Install Task
         uses: arduino/setup-task@v2

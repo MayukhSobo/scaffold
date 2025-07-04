@@ -1,6 +1,6 @@
 module github.com/MayukhSobo/scaffold
 
-go 1.24.4
+go None.4
 
 require (
 	github.com/gin-gonic/gin v1.10.1

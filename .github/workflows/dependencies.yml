@@ -20,51 +20,7 @@ jobs:
     - name: Set up Go
       uses: actions/setup-go@v5
       with:
-        go-version: ${{ env.GO_VERSION }}
-
-    - name: Install Task
-      uses: arduino/setup-task@v2
-      with:
-        version: 3.x
-
-    - name: Run security audit
-      run: |
-        task shared:setup
-        task deps:vulnerabilities
-        task deps:outdated
-
-  update-dependencies:
-    name: Update Dependencies
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      pull-requests: write
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      with:
-        token: ${{ secrets.GITHUB_TOKEN }}
-
-    - name: Set up Go
-      uses: actions/setup-go@v5
-      with:
-        go-version: ${{ env.GO_VERSION }}
-
-    - name: Install Task
-      uses: arduino/setup-task@v2
-      with:
-        version: 3.x
-
-    - name: Update dependencies
-      run: |
-        task shared:setup
-        task deps:patch
-
-    - name: Check for changes
-      id: changes
-      run: |
-        if git diff --quiet go.mod go.sum; then
-          echo "has_changes=false" >> $GITHUB_OUTPUT
+        go-version: '1.24.4'has_changes=false" >> $GITHUB_OUTPUT
         else
           echo "has_changes=true" >> $GITHUB_OUTPUT
         fi
@@ -98,18 +54,7 @@ jobs:
           automated-pr
           patch-update
 
-  check-go-version:
-    name: Check Go Version
-    runs-on: ubuntu-latest
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
-    - name: Check latest Go version
-      id: go-version
-      run: |
-        LATEST_GO=$(curl -s https://go.dev/VERSION?m=text | head -1)
-        CURRENT_GO="go${{ env.GO_VERSION }}"
+  check-go-version: '1.24.4'go${{ env.GO_VERSION }}"
         
         echo "latest=$LATEST_GO" >> $GITHUB_OUTPUT
         echo "current=$CURRENT_GO" >> $GITHUB_OUTPUT
@@ -165,22 +110,4 @@ jobs:
     - name: Set up Go
       uses: actions/setup-go@v5
       with:
-        go-version: ${{ env.GO_VERSION }}
-
-    - name: Install Task
-      uses: arduino/setup-task@v2
-      with:
-        version: 3.x
-
-    - name: Setup and check licenses
-      run: |
-        task shared:setup
-        task deps:licenses
-
-    - name: Upload license report
-      uses: actions/upload-artifact@v4
-      with:
-        name: license-report
-        path: licenses.csv
-        retention-days: 30
-      if: always() && hashFiles('licenses.csv') != '' 
+        go-version: '1.24.4'licenses.csv') != '' 

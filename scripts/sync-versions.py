@@ -27,7 +27,7 @@ class VersionSyncer(ScriptBase):
             '.github/workflows/ci.yml': [
                 {
                     'pattern': r'go-version:\s*[\'"]?([^\'"]+)[\'"]?',
-                    'version_key': 'languages.go',
+                    'version_key': 'go',
                     'replacement': lambda v: f'go-version: \'{v}\''
                 },
                 {
@@ -39,42 +39,42 @@ class VersionSyncer(ScriptBase):
             '.github/workflows/docker.yml': [
                 {
                     'pattern': r'GO_VERSION:\s*[\'"]?([^\'"]+)[\'"]?',
-                    'version_key': 'languages.go',
+                    'version_key': 'go',
                     'replacement': lambda v: f'GO_VERSION: \'{v}\''
                 }
             ],
             '.github/workflows/codeql.yml': [
                 {
                     'pattern': r'go-version:\s*[\'"]?([^\'"]+)[\'"]?',
-                    'version_key': 'languages.go',
+                    'version_key': 'go',
                     'replacement': lambda v: f'go-version: \'{v}\''
                 }
             ],
             '.github/workflows/dependencies.yml': [
                 {
                     'pattern': r'go-version:\s*[\'"]?([^\'"]+)[\'"]?',
-                    'version_key': 'languages.go',
+                    'version_key': 'go',
                     'replacement': lambda v: f'go-version: \'{v}\''
                 }
             ],
             '.github/workflows/release.yml': [
                 {
                     'pattern': r'go-version:\s*[\'"]?([^\'"]+)[\'"]?',
-                    'version_key': 'languages.go',
+                    'version_key': 'go',
                     'replacement': lambda v: f'go-version: \'{v}\''
                 }
             ],
             'Dockerfile': [
                 {
                     'pattern': r'FROM\s+golang:([^\s]+)',
-                    'version_key': 'languages.go',
+                    'version_key': 'go',
                     'replacement': lambda v: f'FROM golang:{v}'
                 }
             ],
             'go.mod': [
                 {
                     'pattern': r'go\s+([0-9]+\.[0-9]+)',
-                    'version_key': 'languages.go',
+                    'version_key': 'go',
                     'replacement': lambda v: f'go {v}'
                 }
             ],
