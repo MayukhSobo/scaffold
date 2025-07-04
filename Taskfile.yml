@@ -14,6 +14,7 @@ includes:
   ci: ./tasks/ci.yml
   config: ./tasks/config.yml
   help: ./tasks/help.yml
+  db: ./tasks/db.yml
 
 vars:
   APP_NAME: Scaffold

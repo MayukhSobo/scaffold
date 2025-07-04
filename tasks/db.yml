@@ -1,0 +1,90 @@
+version: "3"
+
+vars:
+  MIGRATIONS_DIR: "migrations"
+  DB_DSN: "root:123456@tcp(localhost:3306)/user?charset=utf8mb4&parseTime=True&loc=Local"
+  DB_DSN_DOCKER: "root:123456@tcp(mysql:3306)/user?charset=utf8mb4&parseTime=True&loc=Local"
+
+tasks:
+  # Migration tasks
+  migrate:up:
+    desc: Run database migrations (up)
+    silent: true
+    cmds:
+    - goose -dir {{.MIGRATIONS_DIR}} mysql "{{.DB_DSN}}" up
+    - echo "Migrations applied successfully"
+
+  migrate:down:
+    desc: Rollback last migration
+    silent: true
+    cmds:
+    - goose -dir {{.MIGRATIONS_DIR}} mysql "{{.DB_DSN}}" down
+    - echo "Migration rolled back successfully"
+
+  migrate:status:
+    desc: Show migration status
+    silent: true
+    cmds:
+    - goose -dir {{.MIGRATIONS_DIR}} mysql "{{.DB_DSN}}" status
+
+  migrate:create:
+    desc: Create a new migration file
+    silent: true
+    cmds:
+    - |
+      if [ -z "{{.CLI_ARGS}}" ]; then
+        echo "Usage: task db:migrate:create -- migration_name"
+        echo "Example: task db:migrate:create -- create_posts_table"
+        exit 1
+      fi
+    - goose -dir {{.MIGRATIONS_DIR}} create {{.CLI_ARGS}} sql
+    - echo "Migration created successfully"
+
+  migrate:reset:
+    desc: Reset database (down all migrations)
+    silent: true
+    cmds:
+    - goose -dir {{.MIGRATIONS_DIR}} mysql "{{.DB_DSN}}" reset
+    - echo "Database reset successfully"
+
+  migrate:version:
+    desc: Show current migration version
+    silent: true
+    cmds:
+    - goose -dir {{.MIGRATIONS_DIR}} mysql "{{.DB_DSN}}" version
+
+  # Docker-specific migration tasks
+  migrate:docker:up:
+    desc: Run database migrations against Docker MySQL
+    silent: true
+    cmds:
+    - goose -dir {{.MIGRATIONS_DIR}} mysql "root:123456@tcp(localhost:3306)/user?charset=utf8mb4&parseTime=True&loc=Local" up
+    - echo "Docker migrations applied successfully"
+
+  migrate:docker:down:
+    desc: Rollback last migration against Docker MySQL
+    silent: true
+    cmds:
+    - goose -dir {{.MIGRATIONS_DIR}} mysql "root:123456@tcp(localhost:3306)/user?charset=utf8mb4&parseTime=True&loc=Local" down
+    - echo "Docker migration rolled back successfully"
+
+  migrate:docker:status:
+    desc: Show migration status against Docker MySQL
+    silent: true
+    cmds:
+    - goose -dir {{.MIGRATIONS_DIR}} mysql "root:123456@tcp(localhost:3306)/user?charset=utf8mb4&parseTime=True&loc=Local" status
+
+  migrate:docker:reset:
+    desc: Reset database against Docker MySQL
+    silent: true
+    cmds:
+    - goose -dir {{.MIGRATIONS_DIR}} mysql "root:123456@tcp(localhost:3306)/user?charset=utf8mb4&parseTime=True&loc=Local" reset
+    - echo "Docker database reset successfully"
+
+  # Utility tasks
+  install:goose:
+    desc: Install goose migration tool
+    silent: true
+    cmds:
+    - go install github.com/pressly/goose/v3/cmd/goose@latest
+    - echo "Goose installed successfully" 
