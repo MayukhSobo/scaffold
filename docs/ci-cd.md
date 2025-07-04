@@ -1,15 +1,15 @@
-# CI Tasks - Local Development Integration
+# CI/CD & Development Workflows
 
-This document explains how to run CI pipeline tasks locally for consistent development and testing.
+Local development integration with CI pipeline tasks for consistent development and testing.
 
-## Overview
+## 🎯 Overview
 
-We've streamlined the CI/CD pipeline so that **the same tasks run both locally and in CI**. This ensures:
+The CI/CD system ensures **the same tasks run both locally and in CI**:
 - ✅ **Reproducible builds** - What works locally works in CI
 - ✅ **Faster feedback** - Catch issues before pushing
 - ✅ **Consistent environments** - Same tools, same versions, same results
 
-## Quick Start
+## 🚀 Quick Start
 
 ```bash
 # Run quick checks before committing
@@ -21,21 +21,21 @@ task ci:pr
 # Run complete CI pipeline locally
 task ci:full
 
-# Show all available CI commands
+# Show CI status dashboard
 task ci:status
 ```
 
-## Available CI Commands
+## 📋 CI Commands Reference
 
 ### Quick Development Commands
 
-| Command | Description | Use Case |
-|---------|-------------|----------|
-| `task ci:quick` | Test + Lint only | Quick pre-commit check |
-| `task ci:pre-commit` | Pre-commit hook equivalent | Git hook integration |
-| `task ci:pr` | All PR checks | Before creating PR |
-| `task ci:main` | All main branch checks | Before merging to main |
-| `task ci:full` | Complete CI simulation | Full pipeline test |
+| Command | Description | Use Case | Duration |
+|---------|-------------|----------|----------|
+| `task ci:quick` | Test + Lint only | Quick pre-commit check | 2-3 min |
+| `task ci:pre-commit` | Pre-commit hook equivalent | Git hook integration | 2-3 min |
+| `task ci:pr` | All PR checks | Before creating PR | 5-10 min |
+| `task ci:main` | All main branch checks | Before merging to main | 8-12 min |
+| `task ci:full` | Complete CI simulation | Full pipeline test | 10-15 min |
 
 ### Individual Job Commands
 
@@ -49,9 +49,9 @@ task ci:status
 | `task ci:docker` | Docker build + scan | GitHub Actions docker job |
 | `task ci:codeql` | CodeQL analysis | GitHub Actions codeql job |
 
-## Docker Tasks
+## 🐳 Docker Workflows
 
-### Basic Docker Operations
+### Basic Operations
 ```bash
 # Build image (single platform)
 task docker:build
@@ -59,14 +59,14 @@ task docker:build
 # Build multi-platform (like CI)
 task docker:build:multi
 
-# Run container
+# Run container locally
 task docker:run
 
-# Test image (like CI)
+# Test image functionality
 task docker:test
 ```
 
-### Security Scanning
+### Security & Registry
 ```bash
 # Scan for vulnerabilities
 task docker:scan
@@ -76,10 +76,7 @@ task docker:scan:sarif
 
 # Complete Docker CI workflow
 task docker:ci
-```
 
-### Registry Operations
-```bash
 # Login to GitHub Container Registry
 task docker:login
 
@@ -87,9 +84,9 @@ task docker:login
 task docker:push
 ```
 
-## CodeQL Analysis
+## 🔒 Security Analysis
 
-### Setup and Analysis
+### CodeQL Setup & Analysis
 ```bash
 # Install CodeQL CLI
 task codeql:install
@@ -104,39 +101,52 @@ task codeql:analyze:security
 task codeql:analyze:quality
 ```
 
-### Results and Management
+### Results Management
 ```bash
 # View results in human-readable format
 task codeql:view:results
 
-# Show CodeQL info
+# Show CodeQL information
 task codeql:info
 
 # Clean up CodeQL files
 task codeql:clean
 ```
 
-## Workflow Examples
+## 🔄 Workflow Examples
 
-### Before Committing
+### Daily Development
+
 ```bash
-# Quick check (2-3 minutes)
+# Before starting work
+task setup
+
+# During development (with hot reload)
+task dev:hot
+
+# Quick check before committing
 task ci:quick
-```
 
-### Before Creating PR
-```bash
-# Complete PR validation (5-10 minutes)
+# More thorough check
 task ci:pr
 ```
 
-### Before Merging to Main
+### Release Preparation
+
 ```bash
-# Full pipeline simulation (10-15 minutes)
+# Full validation before release
 task ci:full
+
+# Build all platform binaries
+task ci:build:all
+
+# Security scan everything
+task ci:security
+task docker:scan
 ```
 
 ### Docker Development
+
 ```bash
 # Build and test Docker image
 task docker:build
@@ -147,19 +157,7 @@ task docker:scan
 task docker:ci
 ```
 
-### Security Analysis
-```bash
-# Run all security checks
-task ci:security
-
-# Run CodeQL analysis
-task codeql:ci
-
-# Scan Docker image
-task docker:scan
-```
-
-## CI/CD Pipeline Mapping
+## 🗺️ CI/CD Pipeline Mapping
 
 | Local Command | GitHub Actions Workflow | Description |
 |---------------|-------------------------|-------------|
@@ -170,17 +168,20 @@ task docker:scan
 | `task docker:ci` | `.github/workflows/docker.yml` | Docker build + scan |
 | `task codeql:ci` | `.github/workflows/codeql.yml` | CodeQL analysis |
 
-## Tool Installation
+## 🛠️ Tool Management
 
 All tools are automatically installed when needed:
 
-- **golangci-lint**: Auto-installed via task
-- **govulncheck**: Auto-installed via task  
-- **gosec**: Auto-installed via task
-- **Trivy**: Auto-installed via Homebrew (macOS) or apt (Linux)
-- **CodeQL CLI**: Auto-downloaded from GitHub releases
+| Tool | Installation Method | Purpose |
+|------|-------------------|---------|
+| **golangci-lint** | Auto-installed via task | Code linting |
+| **govulncheck** | Auto-installed via task | Vulnerability scanning |
+| **gosec** | Auto-installed via task | Security analysis |
+| **Trivy** | Homebrew (macOS) / apt (Linux) | Container scanning |
+| **CodeQL CLI** | GitHub releases | Code analysis |
+| **gotestsum** | Auto-installed via task | Test output formatting |
 
-## Configuration Files
+## 📁 Configuration Sync
 
 | File | Purpose | Local/CI Sync |
 |------|---------|---------------|
@@ -188,45 +189,50 @@ All tools are automatically installed when needed:
 | `Dockerfile` | Container build | ✅ Same build |
 | `go.mod` | Go dependencies | ✅ Same versions |
 | `Taskfile.yml` | Task definitions | ✅ Same commands |
+| `versions.yml` | Tool versions | ✅ Auto-synced |
 
-## Troubleshooting
+## 🚨 Troubleshooting
 
 ### Common Issues
 
-1. **Tool not found**: Tasks auto-install tools, but you might need to restart your shell
-2. **Permission denied**: Make sure Docker is running and you have permissions
-3. **Network issues**: Some tools need internet access for downloads/updates
+1. **Tool not found**
+   - Tasks auto-install tools
+   - Restart shell after first run
+   - Check with `task shared:info:environment`
+
+2. **Permission denied**
+   - Ensure Docker is running
+   - Check user permissions for Docker
+   - Use `sudo` if needed for system tools
+
+3. **Network issues**
+   - Tools need internet for downloads
+   - Check firewall/proxy settings
+   - Some tools cache downloads locally
+
+4. **Version mismatches**
+   - Run `task shared:version:check`
+   - Sync with `task shared:version:sync`
+   - Check `versions.yml` for correct versions
 
 ### Getting Help
 
 ```bash
+# Show environment info
+task shared:info:environment
+
 # Show all available tasks
-task --list
+task shared:info:tasks
 
-# Show CI status and commands
+# Show CI status
 task ci:status
-
-# Show CodeQL info
-task codeql:info
-
-# Clean up everything and start fresh
-task ci:clean
 ```
 
-## Benefits
+## 🎯 Best Practices
 
-### For Developers
-- 🚀 **Faster feedback**: Catch issues locally before CI
-- 🔄 **Consistent experience**: Same tools, same results
-- 🛠️ **Easy debugging**: Run individual CI jobs locally
-- ⚡ **Quick iterations**: No need to push to test
-
-### For Teams
-- 📊 **Reduced CI failures**: Issues caught locally first
-- 🔧 **Easier onboarding**: Clear, documented workflows
-- 🎯 **Standardized processes**: Everyone uses same tools
-- 💰 **Lower CI costs**: Fewer failed CI runs
-
----
-
-**Pro Tip**: Add `task ci:pre-commit` to your Git pre-commit hooks for automatic validation! 
+1. **Pre-commit**: Always run `task ci:quick` before committing
+2. **Pre-PR**: Run `task ci:pr` before creating pull requests
+3. **Docker testing**: Test containers locally with `task docker:ci`
+4. **Security scanning**: Include security checks in regular workflow
+5. **Version management**: Keep versions updated via `versions.yml`
+6. **Tool consistency**: Let the system manage tool installations 

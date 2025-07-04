@@ -2,81 +2,41 @@ version: "3"
 
 tasks:
   # Test tasks
-  test:
+  all:
     desc: Run all tests
     silent: true
     cmds:
-    - |
-      if ! command -v gotestsum &> /dev/null; then
-        echo "Installing gotestsum..."
-        go install gotest.tools/gotestsum@latest
-      fi
     - gotestsum --format=testname -- {{.TEST_DIRS}}
 
-  test:unit:
+  unit:
     desc: Run unit tests only
     silent: true
     cmds:
-    - |
-      if ! command -v gotestsum &> /dev/null; then
-        echo "Installing gotestsum..."
-        go install gotest.tools/gotestsum@latest
-      fi
     - gotestsum --format=testname -- -short {{.TEST_DIRS}}
 
-  test:integration:
+  integration:
     desc: Run integration tests only
     silent: true
     cmds:
-    - |
-      if ! command -v gotestsum &> /dev/null; then
-        echo "Installing gotestsum..."
-        go install gotest.tools/gotestsum@latest
-      fi
     - gotestsum --format=testname -- -run Integration {{.TEST_DIRS}}
 
-  test:coverage:
+  coverage:
     desc: Run tests with coverage report
     silent: true
     cmds:
     - mkdir -p {{.COVERAGE_DIR}}
-    - |
-      if ! command -v gotestsum &> /dev/null; then
-        echo "Installing gotestsum..."
-        go install gotest.tools/gotestsum@latest
-      fi
     - gotestsum --format=testname -- -coverprofile={{.COVERAGE_DIR}}/coverage.out -covermode=atomic {{.TEST_DIRS}}
     - go tool cover -html={{.COVERAGE_DIR}}/coverage.out -o {{.COVERAGE_DIR}}/coverage.html
     - echo "Coverage report generated at {{.COVERAGE_DIR}}/coverage.html"
 
-  test:coverage:open:
+  coverage:open:
     desc: Generate comprehensive coverage reports and open in browser
     silent: true
     cmds:
     - mkdir -p {{.COVERAGE_DIR}}
-    - |
-      if ! command -v gotestsum &> /dev/null; then
-        echo "Installing gotestsum..."
-        go install gotest.tools/gotestsum@latest
-      fi
     - gotestsum --format=testname -- -coverprofile={{.COVERAGE_DIR}}/coverage.out -covermode=atomic {{.TEST_DIRS}}
     - go tool cover -html={{.COVERAGE_DIR}}/coverage.out -o {{.COVERAGE_DIR}}/coverage.html
-    - |
-      if ! command -v gocov &> /dev/null; then
-        echo "Installing gocov..."
-        go install github.com/axw/gocov/gocov@latest
-      fi
-    - |
-      if ! command -v gocov-html &> /dev/null; then
-        echo "Installing gocov-html..."
-        go install github.com/matm/gocov-html/cmd/gocov-html@latest || echo "gocov-html install skipped"
-      fi
     - gocov convert {{.COVERAGE_DIR}}/coverage.out | gocov-html > {{.COVERAGE_DIR}}/coverage-enhanced.html 2>/dev/null || echo "Enhanced coverage skipped"
-    - |
-      if ! command -v go-cover-treemap &> /dev/null; then
-        echo "Installing go-cover-treemap..."
-        go install github.com/nikolaydubina/go-cover-treemap@latest
-      fi
     - go-cover-treemap -coverprofile={{.COVERAGE_DIR}}/coverage.out > {{.COVERAGE_DIR}}/coverage-treemap.svg 2>/dev/null || echo "Treemap coverage skipped"
     - |
       cd {{.COVERAGE_DIR}} && python3 -m http.server 8080 > /dev/null 2>&1 &
@@ -96,24 +56,14 @@ tasks:
       fi
       wait $HTTP_PID
 
-  test:race:
+  race:
     desc: Run tests with race detection
     silent: true
     cmds:
-    - |
-      if ! command -v gotestsum &> /dev/null; then
-        echo "Installing gotestsum..."
-        go install gotest.tools/gotestsum@latest
-      fi
     - gotestsum --format=testname -- -race {{.TEST_DIRS}}
 
-  test:benchmark:
+  benchmark:
     desc: Run benchmark tests
     silent: true
     cmds:
-    - |
-      if ! command -v gotestsum &> /dev/null; then
-        echo "Installing gotestsum..."
-        go install gotest.tools/gotestsum@latest
-      fi
     - gotestsum --format=testname -- -bench=. -benchmem {{.TEST_DIRS}} 

@@ -2,6 +2,7 @@ version: "3"
 
 # Include all task files from the tasks directory
 includes:
+  shared: ./tasks/shared.yml
   build: ./tasks/build.yml
   dev: ./tasks/dev.yml
   test: ./tasks/test.yml
@@ -31,14 +32,20 @@ vars:
   BINARY_WINDOWS: "{{.BINARY_BASE_NAME}}-amd64-windows.exe"
   BINARY_DEBUG: "{{.BINARY_BASE_NAME}}"
 
-  GO_VERSION: 1.24.4
-  GOLANGCI_LINT_VERSION: v2.2.1
+  # Get versions from versions.yml
+  GO_VERSION:
+    sh: python scripts/run.py version-helper get go
+  GOLANGCI_LINT_VERSION:
+    sh: python scripts/run.py version-helper get tools.golangci-lint
+  TASK_VERSION:
+    sh: python scripts/run.py version-helper get build.task
   VERSION:
     sh: git describe --tags --always --dirty 2>/dev/null || echo "v1.0.0"
   BUILD_TIME:
     sh: date -u +"%Y-%m-%dT%H:%M:%SZ"
+
   # Test directories - modify this to add/remove directories from testing
-  TEST_DIRS: ./cmd/... ./pkg/...
+  TEST_DIRS: ./cmd/... ./pkg/... ./internal/...
   # Coverage output directory
   COVERAGE_DIR: reports
 
@@ -49,7 +56,31 @@ env:
 
 tasks:
   default:
-    desc: Show available tasks
+    desc: Show available tasks organized by category
     cmds:
-    - task --list
+    - task shared:info:tasks
+    silent: true
+
+  setup:
+    desc: Setup development environment (alias for shared:setup)
+    cmds:
+    - task shared:setup
+    silent: true
+
+  info:
+    desc: Show environment information (alias for shared:info:environment)
+    cmds:
+    - task shared:info:environment
+    silent: true
+
+  test:
+    desc: Run all tests (alias for test:all)
+    cmds:
+    - task test:all
+    silent: true
+
+  python:
+    desc: Setup Python virtual environment (alias for shared:setup:python)
+    cmds:
+    - task shared:setup:python
     silent: true

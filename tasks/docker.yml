@@ -66,36 +66,6 @@ tasks:
     desc: Run Trivy vulnerability scanner (like CI)
     silent: true
     cmds:
-    - |
-      if ! command -v trivy &> /dev/null; then
-        echo "📦 Installing Trivy..."
-        OS=$(uname -s | tr '[:upper:]' '[:lower:]')
-        case $OS in
-          darwin)
-            if command -v brew &> /dev/null; then
-              brew install trivy
-            else
-              echo "❌ Homebrew not found. Please install Homebrew first or install Trivy manually."
-              exit 1
-            fi
-            ;;
-          linux)
-            if command -v apt-get &> /dev/null; then
-              sudo apt-get update && sudo apt-get install -y wget apt-transport-https gnupg lsb-release
-              wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | sudo apt-key add -
-              echo "deb https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -sc) main" | sudo tee -a /etc/apt/sources.list.d/trivy.list
-              sudo apt-get update && sudo apt-get install -y trivy
-            else
-              echo "❌ apt-get not found. Please install Trivy manually."
-              exit 1
-            fi
-            ;;
-          *)
-            echo "❌ Unsupported OS: $OS. Please install Trivy manually."
-            exit 1
-            ;;
-        esac
-      fi
     - echo "🔍 Scanning Docker image for vulnerabilities..."
     - trivy image --format table {{.DOCKER_IMAGE_NAME}}:{{.VERSION}}
     - echo "✅ Vulnerability scan completed"
@@ -104,36 +74,6 @@ tasks:
     desc: Run Trivy vulnerability scanner with SARIF output (like CI)
     silent: true
     cmds:
-    - |
-      if ! command -v trivy &> /dev/null; then
-        echo "📦 Installing Trivy..."
-        OS=$(uname -s | tr '[:upper:]' '[:lower:]')
-        case $OS in
-          darwin)
-            if command -v brew &> /dev/null; then
-              brew install trivy
-            else
-              echo "❌ Homebrew not found. Please install Homebrew first or install Trivy manually."
-              exit 1
-            fi
-            ;;
-          linux)
-            if command -v apt-get &> /dev/null; then
-              sudo apt-get update && sudo apt-get install -y wget apt-transport-https gnupg lsb-release
-              wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | sudo apt-key add -
-              echo "deb https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -sc) main" | sudo tee -a /etc/apt/sources.list.d/trivy.list
-              sudo apt-get update && sudo apt-get install -y trivy
-            else
-              echo "❌ apt-get not found. Please install Trivy manually."
-              exit 1
-            fi
-            ;;
-          *)
-            echo "❌ Unsupported OS: $OS. Please install Trivy manually."
-            exit 1
-            ;;
-        esac
-      fi
     - mkdir -p reports
     - echo "🔍 Scanning Docker image for vulnerabilities (SARIF output)..."
     - trivy image --format sarif --output reports/trivy-results.sarif {{.DOCKER_IMAGE_NAME}}:{{.VERSION}}

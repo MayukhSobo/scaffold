@@ -35,18 +35,17 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: "1.24.4"
+          go-version: "1.24.4"  # Updated from versions.yml via version-helper.sh
 
       - name: Install Task
         uses: arduino/setup-task@v2
         with:
           version: 3.x
 
-      - name: Install dependencies
-        run: task deps:install
-
-      - name: Build project
-        run: task build:debug
+      - name: Setup environment and build project
+        run: |
+          task shared:setup
+          task build:debug
 
       # Note: For local CodeQL analysis, use: task codeql:ci
       # This CI workflow uses GitHub Actions for integration with Security tab

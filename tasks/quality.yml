@@ -3,78 +3,18 @@ version: "3"
 tasks:
   # Code quality tasks
   lint:
-    desc: "Run linter (use skip=true to skip installation, or force=true to reinstall)"
+    desc: "Run linter (golangci-lint)"
     silent: true
     cmds:
-      - |
-        SKIP_INSTALL={{.skip}}
-        FORCE={{.force}}
-        
-        INSTALL_LINT=true
-        if [ "$SKIP_INSTALL" = "true" ]; then
-          INSTALL_LINT=false
-        fi
-
-        if [ "$INSTALL_LINT" = "true" ] && [ "$FORCE" != "true" ]; then
-          CURRENT_VERSION=""
-          if command -v golangci-lint &>/dev/null; then
-            # Try v2+ JSON output first, which is more reliable
-            CURRENT_VERSION=$(golangci-lint version --json 2>/dev/null | grep '"Version"' | sed -n 's/.*"Version": *"[v]*\\([^"]*\\)".*/\\1/p' || true)
-            if [ -z "$CURRENT_VERSION" ]; then
-              # Fallback to v1 text output for older versions
-              CURRENT_VERSION=$(golangci-lint --version 2>/dev/null | awk -F'version ' '{print $2}' | awk '{print $1}' || true)
-            fi
-          fi
-
-          if [ "$CURRENT_VERSION" = "$(echo "{{.GOLANGCI_LINT_VERSION}}" | sed 's/v//')" ]; then
-            INSTALL_LINT=false
-          fi
-        fi
-
-        if [ "$INSTALL_LINT" = "true" ]; then
-          echo "Installing golangci-lint@{{.GOLANGCI_LINT_VERSION}}..."
-          go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@{{.GOLANGCI_LINT_VERSION}}
-        fi
-        
-        golangci-lint run
+    - golangci-lint run
 
   fix:
-    desc: "Run linter and automatically fix issues (use skip=true to skip installation, or force=true to reinstall)"
+    desc: "Run linter and automatically fix issues"
     silent: true
     cmds:
-      - |
-        SKIP_INSTALL={{.skip}}
-        FORCE={{.force}}
-        
-        INSTALL_LINT=true
-        if [ "$SKIP_INSTALL" = "true" ]; then
-          INSTALL_LINT=false
-        fi
-
-        if [ "$INSTALL_LINT" = "true" ] && [ "$FORCE" != "true" ]; then
-          CURRENT_VERSION=""
-          if command -v golangci-lint &>/dev/null; then
-            # Try v2+ JSON output first, which is more reliable
-            CURRENT_VERSION=$(golangci-lint version --json 2>/dev/null | grep '"Version"' | sed -n 's/.*"Version": *"[v]*\\([^"]*\\)".*/\\1/p' || true)
-            if [ -z "$CURRENT_VERSION" ]; then
-              # Fallback to v1 text output for older versions
-              CURRENT_VERSION=$(golangci-lint --version 2>/dev/null | awk -F'version ' '{print $2}' | awk '{print $1}' || true)
-            fi
-          fi
-
-          if [ "$CURRENT_VERSION" = "$(echo "{{.GOLANGCI_LINT_VERSION}}" | sed 's/v//')" ]; then
-            INSTALL_LINT=false
-          fi
-        fi
-
-        if [ "$INSTALL_LINT" = "true" ]; then
-          echo "Installing golangci-lint@{{.GOLANGCI_LINT_VERSION}}..."
-          go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@{{.GOLANGCI_LINT_VERSION}}
-        fi
-        
-        echo "Running linter with --fix option..."
-        golangci-lint run --fix
-        echo "Linting and fixing complete."
+    - echo "Running linter with --fix option..."
+    - golangci-lint run --fix
+    - echo "Linting and fixing complete."
 
   fmt:
     desc: Format code
@@ -96,61 +36,24 @@ tasks:
     cmds:
     - go fmt ./...
     - go vet ./...
-    - |
-      SKIP_INSTALL={{.skip}}
-      FORCE={{.force}}
-      
-      INSTALL_LINT=true
-      if [ "$SKIP_INSTALL" = "true" ]; then
-        INSTALL_LINT=false
-      fi
-
-      if [ "$INSTALL_LINT" = "true" ] && [ "$FORCE" != "true" ]; then
-        CURRENT_VERSION=""
-        if command -v golangci-lint &>/dev/null; then
-          # Try v2+ JSON output first, which is more reliable
-          CURRENT_VERSION=$(golangci-lint version --json 2>/dev/null | grep '"Version"' | sed -n 's/.*"Version": *"[v]*\\([^"]*\\)".*/\\1/p' || true)
-          if [ -z "$CURRENT_VERSION" ]; then
-            # Fallback to v1 text output for older versions
-            CURRENT_VERSION=$(golangci-lint --version 2>/dev/null | awk -F'version ' '{print $2}' | awk '{print $1}' || true)
-          fi
-        fi
-
-        if [ "$CURRENT_VERSION" = "$(echo "{{.GOLANGCI_LINT_VERSION}}" | sed 's/v//')" ]; then
-          INSTALL_LINT=false
-        fi
-      fi
-
-      if [ "$INSTALL_LINT" = "true" ]; then
-        echo "Installing golangci-lint@{{.GOLANGCI_LINT_VERSION}}..."
-        go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@{{.GOLANGCI_LINT_VERSION}}
-      fi
-      
-      golangci-lint run
+    - golangci-lint run
     - echo "All code quality checks completed"
 
   gosec:
     desc: "Run gosec security scanner"
     silent: true
     cmds:
-      - |
-        echo "Running gosec security scanner..."
-        if ! command -v gosec &> /dev/null; then
-          echo "Installing gosec..."
-          go install github.com/securego/gosec/v2/cmd/gosec@latest
-        fi
-        gosec ./...
+    - echo "Running gosec security scanner..."
+    - gosec ./...
 
   all:
     desc: "Run ALL quality checks (fmt, vet, and aggressive linting) and apply all available fixes"
     silent: true
     cmds:
-      - echo "Applying code formatting..."
-      - go fmt ./...
-      - echo "Running go vet analysis..."
-      - go vet ./...
-      - echo "Running aggressive linting and fixing..."
-      - |
-        # Run with aggressive flags to show and fix as much as possible
-        golangci-lint run --fix --max-issues-per-linter=0 --max-same-issues=0
-      - echo "✅ All quality checks and fixes have been applied." 
+    - echo "Applying code formatting..."
+    - go fmt ./...
+    - echo "Running go vet analysis..."
+    - go vet ./...
+    - echo "Running aggressive linting and fixing..."
+    - golangci-lint run --fix --max-issues-per-linter=0 --max-same-issues=0
+    - echo "✅ All quality checks and fixes have been applied." 

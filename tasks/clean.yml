@@ -3,14 +3,13 @@ version: "3"
 tasks:
   # Utility tasks
   all:
-    desc: Clean all build artifacts
+    desc: Clean all build artifacts and caches
     silent: true
     cmds:
-    - rm -rf {{.BUILD_DIR}}
-    - rm -rf {{.COVERAGE_DIR}}
-    - rm -f coverage.out coverage.html
-    - go clean -cache
-    - go clean -testcache
+    - task shared:cleanup:build
+    - task shared:cleanup:go
+    - task shared:cleanup:reports
+    - echo "✅ All artifacts and caches cleaned"
 
   debug:
     desc: Clean development build artifacts only

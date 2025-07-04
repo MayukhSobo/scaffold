@@ -44,8 +44,8 @@ tasks:
     desc: Remove vendor directory
     silent: true
     cmds:
-    - go mod vendor
-    - echo "Dependencies vendored to vendor/ directory"
+    - rm -rf vendor
+    - echo "Vendor directory removed"
 
   clean:cache:
     desc: Clean the module download cache
@@ -76,10 +76,25 @@ tasks:
     desc: Check for security vulnerabilities in dependencies
     silent: true
     cmds:
+    - echo "Checking for security vulnerabilities..."
+    - govulncheck ./...
+
+  licenses:
+    desc: Check licenses of dependencies
+    silent: true
+    cmds:
     - |
-      echo "Checking for security vulnerabilities..."
-      if ! command -v govulncheck &> /dev/null; then
-        echo "Installing govulncheck..."
-        go install golang.org/x/vuln/cmd/govulncheck@latest
-      fi
-      govulncheck ./...
+      echo "Checking dependency licenses..."
+      echo "License,Package,Version" > licenses.csv
+      go list -m all | while read -r line; do
+        if [[ "$line" =~ ^([^[:space:]]+)[[:space:]]+(.+)$ ]]; then
+          package="${BASH_REMATCH[1]}"
+          version="${BASH_REMATCH[2]}"
+          # Simple license detection - you might want to use a more sophisticated tool
+          if [[ "$package" != "$(go list -m)" ]]; then
+            echo "Unknown,$package,$version" >> licenses.csv
+          fi
+        fi
+      done
+      echo "License report generated at licenses.csv"
+      echo "Note: This is a basic license check. Consider using tools like 'go-licenses' for more accurate detection."

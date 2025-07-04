@@ -1,0 +1,47 @@
+# versions.yml - Single source of truth for all tool versions
+# This file manages versions for all tools used in development, CI/CD, and deployment
+# Update versions here to change them across all tasks and workflows
+
+# Core language and runtime versions
+go: "1.24.4"
+node: "20"
+python: "3.12"
+
+# Go development tools
+tools:
+  golangci-lint: "v2.2.1"
+  gotestsum: "latest"
+  gosec: "latest"
+  govulncheck: "latest"
+  air: "latest"
+  gocov: "latest"
+  gocov-html: "latest"
+  go-cover-treemap: "latest"
+  trivy: "latest"
+
+# GitHub Actions and CI tools
+actions:
+  setup-go: "v5"
+  setup-task: "v3"
+  setup-docker-buildx: "v3"
+  docker-metadata: "v5"
+  docker-build-push: "v6"
+  github-script: "v7"
+  upload-artifact: "v4"
+  download-artifact: "v4"
+  cache: "v4"
+
+# Security and analysis tools
+security:
+  codeql-cli: "2.16.1"
+  trivy: "latest"
+  gosec: "latest"
+  govulncheck: "latest"
+
+# Build and deployment
+build:
+  docker-buildx: "latest"
+  task: "3.x"
+
+# Version for this configuration format
+schema_version: "1.0.0" 

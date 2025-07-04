@@ -7,7 +7,7 @@ on:
     branches: [main]
 
 env:
-  GO_VERSION: 1.24.4
+  GO_VERSION: 1.24.4  # Updated from versions.yml via version-helper.sh
 
 jobs:
   test:
@@ -29,14 +29,8 @@ jobs:
         with:
           version: 3.x
 
-      - name: Install dependencies
-        run: task deps:install
-
-      - name: Run tests
-        run: task test:test
-
-      - name: Run tests with race detection
-        run: task test:test:race
+      - name: Run test job
+        run: task ci:test
 
   lint:
     name: Lint
@@ -55,14 +49,8 @@ jobs:
         with:
           version: 3.x
 
-      - name: Install dependencies
-        run: task deps:install
-
-      - name: Run quality checks
-        run: task quality:check
-
-      - name: Check vulnerabilities
-        run: task deps:vulnerabilities
+      - name: Run lint job
+        run: task ci:lint
 
   build:
     name: Build
@@ -92,20 +80,8 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y upx-ucl
 
-      - name: Install dependencies
-        run: task deps:install
-
-      - name: Build for Linux
-        if: matrix.goos == 'linux'
-        run: task build:release:linux
-
-      - name: Build for macOS
-        if: matrix.goos == 'darwin'
-        run: task build:release:darwin
-
-      - name: Build for Windows
-        if: matrix.goos == 'windows'
-        run: task build:release:windows
+      - name: Build for ${{ matrix.goos }}
+        run: task build:release:${{ matrix.goos }}
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
@@ -131,11 +107,5 @@ jobs:
         with:
           version: 3.x
 
-      - name: Install dependencies
-        run: task deps:install
-
-      - name: Run Gosec Security Scanner
-        run: task quality:gosec
-
-      - name: Check for vulnerabilities
-        run: task deps:vulnerabilities
+      - name: Run security job
+        run: task ci:security

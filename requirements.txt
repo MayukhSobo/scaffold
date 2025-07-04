@@ -1,0 +1,17 @@
+# Python dependencies for the development scripts
+# These provide enhanced functionality and better user experience
+
+# Enhanced YAML parsing
+PyYAML>=6.0
+
+# Rich terminal formatting and progress bars
+rich>=13.0.0
+
+# HTTP requests for downloading tools and checking versions
+requests>=2.31.0
+
+# Cross-platform path handling
+pathlib2>=2.3.7; python_version < "3.4"
+
+# Subprocess management
+subprocess32>=3.5.4; python_version < "3.2" 

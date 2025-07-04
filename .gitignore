@@ -47,6 +47,7 @@ Thumbs.db
 .env
 .env.local
 .env.*.local
+.venv/
 
 # Logs
 logs/
@@ -54,3 +55,6 @@ logs/
 
 # Trunks
 .trunk
+
+# Python temps
+__pycache__

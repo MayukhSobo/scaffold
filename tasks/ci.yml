@@ -7,9 +7,9 @@ tasks:
     silent: true
     cmds:
     - echo "🧪 Running test job..."
-    - task deps:install
-    - task test:test
-    - task test:test:race
+    - task shared:setup
+    - task test:all
+    - task test:race
     - echo "✅ Test job completed successfully"
 
   lint:
@@ -17,7 +17,7 @@ tasks:
     silent: true
     cmds:
     - echo "🔍 Running lint job..."
-    - task deps:install
+    - task shared:setup
     - task quality:check
     - task deps:vulnerabilities
     - echo "✅ Lint job completed successfully"
@@ -27,7 +27,7 @@ tasks:
     silent: true
     cmds:
     - echo "🔨 Running build job..."
-    - task deps:install
+    - task shared:setup
     - |
       case "{{OS}}" in
         linux) task build:release:linux ;;
@@ -42,7 +42,7 @@ tasks:
     silent: true
     cmds:
     - echo "🔨 Running build job for all platforms..."
-    - task deps:install
+    - task shared:setup
     - task build:release:linux
     - task build:release:darwin
     - task build:release:windows
@@ -53,7 +53,7 @@ tasks:
     silent: true
     cmds:
     - echo "🔒 Running security job..."
-    - task deps:install
+    - task shared:setup
     - task quality:gosec
     - task deps:vulnerabilities
     - echo "✅ Security job completed successfully"
@@ -128,7 +128,7 @@ tasks:
     cmds:
     - echo "🪝 Running pre-commit checks..."
     - task quality:all
-    - task test:test
+    - task test:all
     - task deps:vulnerabilities
     - echo "✅ Pre-commit checks completed successfully"
 

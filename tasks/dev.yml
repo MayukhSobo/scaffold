@@ -17,11 +17,8 @@ tasks:
   hot:
     desc: Run the application in development mode with hot reload
     silent: true
-    deps: [ ":build:debug" ]
+    deps: [build:debug]
     cmds:
-    - |
-      if ! command -v air &> /dev/null; then
-        echo "Installing air..."
-        go install github.com/air-verse/air@latest
-      fi
-    - air 
+    - air
+    vars:
+      CLI_ARGS: air 

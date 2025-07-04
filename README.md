@@ -196,241 +196,103 @@ graph TD
 
 ---
 
+## 🚀 Quick Start
+
+```bash
+# Clone and setup
+git clone https://github.com/thedatageek/scaffold.git
+cd scaffold
+task setup
+
+# Show all available tasks
+task
+
+# Start development with hot reload
+task dev:hot
+
+# Run checks before committing
+task ci:quick
+```
+
+## 📚 Documentation
+
+| Topic | Documentation | Description |
+|-------|---------------|-------------|
+| **Task System** | [docs/task-system.md](docs/task-system.md) | Task automation and Python scripts |
+| **Development** | [docs/development-guide.md](docs/development-guide.md) | Development workflows and best practices |
+| **CI/CD** | [docs/ci-cd.md](docs/ci-cd.md) | CI/CD workflows and automation |
+| **Version Management** | [docs/version-management.md](docs/version-management.md) | Centralized version control |
+| **Python Scripts** | [docs/python-scripts.md](docs/python-scripts.md) | Modern Python automation scripts |
+| **Task Reference** | [docs/task-reference.md](docs/task-reference.md) | Complete task command reference |
+
+## ⚡ Key Features
+
+- **🐍 Enhanced Python Scripts**: Progress tracking, auto venv activation
+- **🔄 Unified Task System**: Same commands for local development and CI/CD
+- **🔢 Centralized Versions**: Single source of truth in `versions.yml`
+- **🧪 Comprehensive Testing**: Unit, integration, race detection, benchmarks
+- **📊 Advanced Coverage**: HTML reports, treemaps, function-level analysis
+- **🐳 Docker Ready**: Multi-stage builds, security scanning
+- **🔒 Security First**: CodeQL, gosec, vulnerability scanning
+- **⚡ Hot Reloading**: Live development with `air`
+
 ## 🔄 CI/CD Integration
 
-This project features **streamlined CI/CD integration** where the same tasks run both locally and in CI, ensuring reproducible builds and consistent environments.
-
-**📋 For complete CI/CD documentation, see [CI_TASKS.md](CI_TASKS.md)**
-
-### Quick CI Commands
+The system ensures **the same tasks run both locally and in CI**:
 
 ```bash
-# Run quick checks before committing
-task ci:quick
-
-# Run all PR checks before creating a PR
-task ci:pr
-
-# Run complete CI pipeline locally
-task ci:full
-
-# Show all available CI commands
-task ci:status
+# Run the same checks as CI
+task ci:pr    # All PR checks
+task ci:main  # All main branch checks
+task ci:full  # Complete CI pipeline
 ```
 
-**Key Benefits:**
-- ✅ **Reproducible builds** - What works locally works in CI
-- ✅ **Faster feedback** - Catch issues before pushing
-- ✅ **Consistent environments** - Same tools, same versions, same results
-- ✅ **Docker + Security scanning** - Full vulnerability analysis locally
+**Benefits**: ✅ Reproducible builds ✅ Faster feedback ✅ Consistent environments
 
----
-
-## 🚀 Usage: Available Tasks
-
-This project uses a **modular `Taskfile.yml` structure** as a modern alternative to `Makefile`. All commands are managed through `task` with organized namespaces.
-
-Run `task --list` for a quick overview or `task help:help` for detailed descriptions.
-
-### 📦 Build Tasks
-
-| Command                            | Description                                                       |
-| ---------------------------------- | ----------------------------------------------------------------- |
-| `task build:build`                 | Build a development binary with debug symbols and race detection. |
-| `task build:build:release:linux`   | Build an optimized, compressed release binary for Linux.          |
-| `task build:build:release:darwin`  | Build an optimized, compressed release binary for macOS.          |
-| `task build:build:release:windows` | Build an optimized, compressed release binary for Windows.        |
-| `task build:build:release:all`     | Build release binaries for all platforms.                         |
-
-### 🏃 Development Tasks
-
-| Command             | Description                                    |
-| ------------------- | ---------------------------------------------- |
-| `task dev:run`      | Run the application using `configs/local.yml`. |
-| `task dev:run:prod` | Run the application using `configs/prod.yml`.  |
-| `task dev:dev`      | Run with **hot-reloading** using `air`.        |
-
-### 🧪 Test Tasks
-
-| Command                        | Description                                                                             |
-| ------------------------------ | --------------------------------------------------------------------------------------- |
-| `task test:test`               | Run all tests using `gotestsum`.                                                        |
-| `task test:test:unit`          | Run only unit tests.                                                                    |
-| `task test:test:integration`   | Run only integration tests.                                                             |
-| `task test:test:race`          | Run tests with the race detector enabled.                                               |
-| `task test:test:benchmark`     | Run benchmark tests.                                                                    |
-| `task test:test:coverage`      | Generate a standard HTML coverage report.                                               |
-| `task test:test:coverage:open` | Generate **comprehensive coverage reports** (HTML, gocov, treemap) and open in browser. |
-
-### 🔍 Code Quality Tasks
-
-| Command                        | Description                                           |
-| ------------------------------ | ----------------------------------------------------- |
-| `task quality:lint`            | Run `golangci-lint` to find code issues.              |
-| `task quality:lint skip=true`  | Run linter without checking/installing golangci-lint. |
-| `task quality:lint force=true` | Force reinstall golangci-lint and run linter.         |
-| `task quality:fmt`             | Format all Go source files with `gofmt`.              |
-| `task quality:vet`             | Run `go vet` to analyze source code.                  |
-| `task quality:check`           | Run all quality checks (`fmt`, `vet`, `lint`).        |
-
-### 🧹 Cleanup Tasks
-
-| Command                            | Description                                 |
-| ---------------------------------- | ------------------------------------------- |
-| `task clean:clean`                 | Clean all build artifacts and caches.       |
-| `task clean:clean:debug`           | Clean development build artifacts only.     |
-| `task clean:clean:release:linux`   | Clean Linux release build artifacts only.   |
-| `task clean:clean:release:darwin`  | Clean macOS release build artifacts only.   |
-| `task clean:clean:release:windows` | Clean Windows release build artifacts only. |
-| `task clean:clean:release:all`     | Clean all release build artifacts.          |
-
-### 📦 Dependency Management
-
-| Command                  | Description                                     |
-| ------------------------ | ----------------------------------------------- |
-| `task deps:deps`         | Download and tidy Go module dependencies.       |
-| `task deps:deps:install` | Install/update dependencies.                    |
-| `task deps:deps:update`  | Update all dependencies to the latest versions. |
-
-### 🐳 Docker Tasks
-
-| Command                    | Description                                |
-| -------------------------- | ------------------------------------------ |
-| `task docker:docker:build` | Build a production-ready Docker image.     |
-| `task docker:docker:run`   | Run the application in a Docker container. |
-
-### ⚙️ Configuration & Help
-
-| Command                       | Description                                           |
-| ----------------------------- | ----------------------------------------------------- |
-| `task config:config:validate` | Validate all `.yml` files in the `configs` directory. |
-| `task help:help`              | Show detailed help for all tasks.                     |
-
----
-
-## 🔧 Modular Build System
-
-This project features a **modular Taskfile structure** that organizes tasks into logical namespaces:
-
-### 📁 Task Organization
-
-```
-Taskfile.yml              # Main configuration with includes
-├── tasks/build.yml        # Build operations
-├── tasks/clean.yml        # Cleanup operations
-├── tasks/config.yml       # Configuration validation
-├── tasks/deps.yml         # Dependency management
-├── tasks/dev.yml          # Development workflow
-├── tasks/docker.yml       # Container operations
-├── tasks/help.yml         # Documentation
-├── tasks/quality.yml      # Code quality assurance
-└── tasks/test.yml         # Testing operations
-```
-
-### 🎯 Benefits
-
-- **Modularity**: Each file focuses on a specific domain
-- **Maintainability**: Easier to find and modify specific tasks
-- **Collaboration**: Team members can work on different task files simultaneously
-- **Reusability**: Individual task files can be shared across projects
-
----
-
-## ⚙️ Configuration
-
-Application configuration is managed by `viper` and loaded from the `configs/` directory.
-
-- **`configs/local.yml`**: Used for local development (`task dev:run`, `task dev:dev`).
-- **`configs/prod.yml`**: Used for production runs (`task dev:run:prod`).
-
-You can specify a configuration file using the `--config` flag:
+## 🧪 Testing & Coverage
 
 ```bash
-go run ./cmd/server --config=configs/local.yml
+# Run all tests
+task test:all
+
+# Run specific test types
+task test:unit
+task test:integration  
+task test:race
+
+# Enhanced coverage with multiple views
+task test:coverage:open
 ```
 
-The system also supports a `--validate-config` flag to check if a configuration file is valid without running the server, used in the `task config:config:validate` task.
-
----
-
-## 📦 Build & Deployment
-
-### Development Build
-
-For a quick debug build with race detection enabled:
+## 🏗️ Building
 
 ```bash
-task build:build
+# Debug build with race detection
+task build:debug
+
+# Release builds
+task build:release:linux
+task build:release:darwin
+task build:release:windows
+
+# Build all platforms
+task build:release:all
 ```
 
-This creates a binary at `build/debug/scaffold`.
-
-### Production Release Builds
-
-To create highly optimized and compressed binaries for distribution:
+## 🚨 Getting Help
 
 ```bash
-task build:build:release:all
+# Show all available tasks
+task
+
+# Show environment information
+task shared:info:environment
+
+# Setup tools if needed
+task shared:setup:tools
 ```
 
-This generates binaries for Linux, macOS, and Windows in their respective `build/` subdirectories (e.g., `build/linux/scaffold-amd64-linux`).
-
-**Optimization Highlights:**
-
-- **Stripped Symbols (`-s -w`):** Removes debug information to reduce size.
-- **Static Linking:** Creates self-contained binaries where possible.
-- **UPX Compression:** Further compresses the binary, often resulting in an **80-85% size reduction**. A 10MB binary can become ~1.5MB.
-
----
-
-## 🔬 Testing and Coverage
-
-This boilerplate offers a rich testing and coverage experience.
-
-To run all tests:
-
-```bash
-task test:test
-```
-
-To generate and view the full suite of coverage reports:
-
-```bash
-task test:test:coverage:open
-```
-
-This command:
-
-1.  Runs tests and generates coverage data.
-2.  Creates three different reports in the `reports/` directory:
-    - `coverage.html` (standard)
-    - `coverage-enhanced.html` (detailed)
-    - `coverage-treemap.svg` (visual)
-3.  Starts a local web server on port `8080`.
-4.  Opens your browser to view the reports.
-
----
-
-## 🔍 Advanced Linting
-
-The project includes smart `golangci-lint` management with version control:
-
-```bash
-# Normal linting (auto-installs if needed)
-task quality:lint
-
-# Skip installation check (faster if you know it's installed)
-task quality:lint skip=true
-
-# Force reinstall golangci-lint
-task quality:lint force=true
-```
-
-The linter automatically:
-
-- Checks if the correct version is installed
-- Installs `golangci-lint` v2.2.0 if missing or outdated
-- Uses your project's `.golangci.yml` configuration
+For detailed documentation, see the [docs/](docs/) directory.
 
 ---
 

@@ -1,0 +1,339 @@
+version: "3"
+
+tasks:
+  # Setup tasks - used by all other tasks
+  setup:
+    desc: Setup development environment (install dependencies and tools)
+    silent: true
+    deps: [setup:go, setup:tools, setup:python]
+    cmds:
+    - echo "✅ Development environment setup completed"
+    - echo "🎯 Go dependencies, development tools, and Python environment are ready!"
+
+  setup:tools:
+    desc: Install development tools
+    silent: true
+    cmds:
+    - |
+      if [ -n "{{.CLI_ARGS}}" ]; then
+        python scripts/run.py install-tools "{{.CLI_ARGS}}"
+      else
+        python scripts/run.py install-tools
+      fi
+
+  setup:go:
+    desc: Install Go dependencies only
+    silent: true
+    cmds:
+    - go mod download
+    - go mod tidy
+    - echo "✅ Go dependencies installed"
+
+  setup:python:
+    desc: Setup Python virtual environment with dependencies
+    silent: true
+    cmds:
+    - |
+      echo "🐍 Setting up Python virtual environment..."
+      
+      # Check if Python 3 is installed
+      if ! command -v python3 >/dev/null 2>&1; then
+        echo "❌ Python 3 not found. Installing..."
+        case "{{OS}}" in
+          "darwin")
+            if command -v brew >/dev/null 2>&1; then
+              brew install python3
+            else
+              echo "❌ Homebrew not found. Please install Python 3 manually."
+              exit 1
+            fi
+            ;;
+          "linux")
+            if command -v apt-get >/dev/null 2>&1; then
+              sudo apt-get update && sudo apt-get install -y python3 python3-pip python3-venv
+            elif command -v yum >/dev/null 2>&1; then
+              sudo yum install -y python3 python3-pip
+            elif command -v dnf >/dev/null 2>&1; then
+              sudo dnf install -y python3 python3-pip
+            else
+              echo "❌ Package manager not found. Please install Python 3 manually."
+              exit 1
+            fi
+            ;;
+          *)
+            echo "❌ Unsupported OS: {{OS}}. Please install Python 3 manually."
+            exit 1
+            ;;
+        esac
+      else
+        echo "✅ Python 3 found: $(python3 --version)"
+      fi
+      
+      # Create virtual environment if it doesn't exist
+      if [ ! -d ".venv" ]; then
+        echo "📦 Creating virtual environment..."
+        python3 -m venv .venv
+        echo "✅ Virtual environment created in .venv/"
+      else
+        echo "✅ Virtual environment already exists"
+      fi
+      
+      # Activate virtual environment and install dependencies
+      echo "📋 Installing Python dependencies..."
+      if [ -f "requirements.txt" ]; then
+        .venv/bin/python -m pip install --upgrade pip
+        .venv/bin/python -m pip install -r requirements.txt
+        echo "✅ Dependencies installed from requirements.txt"
+      else
+        echo "⚠️  No requirements.txt found, skipping dependency installation"
+      fi
+      
+      # Show activation instructions
+      echo ""
+      echo "🎯 Python virtual environment setup complete!"
+      echo "To activate the environment manually, run:"
+      echo "  source .venv/bin/activate"
+      echo ""
+      echo "To deactivate when done:"
+      echo "  deactivate"
+
+  setup:python:activate:
+    desc: Show instructions to activate Python virtual environment
+    silent: true
+    cmds:
+    - |
+      if [ -d ".venv" ]; then
+        echo "🐍 Python virtual environment is ready!"
+        echo "To activate it, run:"
+        echo "  source .venv/bin/activate"
+        echo ""
+        echo "After activation, you can:"
+        echo "  - Use enhanced YAML parsing with PyYAML"
+        echo "  - Run Python scripts with dependencies"
+        echo "  - Install additional packages with pip"
+      else
+        echo "❌ Virtual environment not found. Run 'task shared:setup:python' first."
+      fi
+
+  # Common validation tasks
+  validate:go:
+    desc: Validate Go environment
+    silent: true
+    cmds:
+    - go version
+    - go env GOPATH
+    - go env GOROOT
+    - echo "✅ Go environment validated"
+
+  validate:docker:
+    desc: Validate Docker environment
+    silent: true
+    cmds:
+    - docker version
+    - docker info
+    - echo "✅ Docker environment validated"
+
+  # Common cleanup tasks
+  cleanup:go:
+    desc: Clean Go caches and temporary files
+    silent: true
+    cmds:
+    - go clean -cache
+    - go clean -modcache
+    - go clean -testcache
+    - go clean -fuzzcache
+    - echo "✅ Go caches cleaned"
+
+  cleanup:build:
+    desc: Clean build artifacts
+    silent: true
+    cmds:
+    - rm -rf {{.BUILD_DIR}}
+    - rm -rf {{.COVERAGE_DIR}}
+    - rm -f coverage.out coverage.html
+    - echo "✅ Build artifacts cleaned"
+
+  cleanup:docker:
+    desc: Clean Docker system
+    silent: true
+    cmds:
+    - docker system prune -f
+    - echo "✅ Docker system cleaned"
+
+  cleanup:reports:
+    desc: Clean all report directories
+    silent: true
+    cmds:
+    - rm -rf reports
+    - rm -rf logs
+    - echo "✅ Reports cleaned"
+
+  # Version management tasks
+  version:show:
+    desc: Show all current versions from versions.yml
+    silent: true
+    cmds:
+    - python scripts/run.py version-helper list
+
+  version:sync:
+    desc: Sync versions from versions.yml to all files
+    silent: true
+    cmds:
+    - python scripts/run.py sync-versions
+    - echo "✅ Versions synchronized"
+
+  version:sync:dry-run:
+    desc: Show what would be changed by version sync
+    silent: true
+    cmds:
+    - python scripts/run.py sync-versions --dry-run
+
+  version:check:
+    desc: Check version consistency across all files
+    silent: true
+    cmds:
+    - python scripts/run.py sync-versions --check
+    - echo "✅ Version consistency checked"
+
+  # Common info tasks
+  info:environment:
+    desc: Display environment information
+    silent: true
+    cmds:
+    - |
+      echo "🔧 Environment Information"
+      echo "========================="
+      echo "Go Version: $(go version)"
+      echo "OS: {{OS}}"
+      echo "Arch: {{ARCH}}"
+      echo "App Name: {{.APP_NAME}}"
+      echo "Version: {{.VERSION}}"
+      echo "Build Time: {{.BUILD_TIME}}"
+      echo "Build Dir: {{.BUILD_DIR}}"
+      echo "Coverage Dir: {{.COVERAGE_DIR}}"
+      echo ""
+      echo "📦 Tool Versions:"
+      echo "=================="
+      command -v golangci-lint >/dev/null && echo "  golangci-lint: $(golangci-lint version --short 2>/dev/null || echo 'not installed')"
+      command -v gotestsum >/dev/null && echo "  gotestsum: installed" || echo "  gotestsum: not installed"
+      command -v gosec >/dev/null && echo "  gosec: installed" || echo "  gosec: not installed"
+      command -v govulncheck >/dev/null && echo "  govulncheck: installed" || echo "  govulncheck: not installed"
+      command -v air >/dev/null && echo "  air: installed" || echo "  air: not installed"
+      command -v trivy >/dev/null && echo "  trivy: installed" || echo "  trivy: not installed"
+      command -v docker >/dev/null && echo "  docker: $(docker --version)" || echo "  docker: not installed"
+
+  info:tasks:
+    desc: Display all available tasks organized by category
+    silent: true
+    cmds:
+    - |
+      echo "🚀 {{.APP_NAME}} Task Reference"
+      echo "================================"
+      echo ""
+      echo "📋 SETUP & ENVIRONMENT"
+      echo "  shared:setup              - Setup complete development environment"
+      echo "  shared:setup:tools        - Install specific tools (pass tool names as args)"
+      echo "  shared:setup:go           - Install Go dependencies only"
+      echo "  shared:setup:python       - Setup Python virtual environment"
+      echo "  shared:setup:python:activate - Show Python venv activation instructions"
+      echo "  shared:validate:go        - Validate Go environment"
+      echo "  shared:validate:docker    - Validate Docker environment"
+      echo "  shared:info:environment   - Show environment information"
+      echo ""
+      echo "🔨 BUILD & DEVELOPMENT"
+      echo "  build:debug               - Build debug binary with race detection"
+      echo "  build:release:linux       - Build optimized Linux binary"
+      echo "  build:release:darwin      - Build optimized macOS binary"
+      echo "  build:release:windows     - Build optimized Windows binary"
+      echo "  build:release:all         - Build all platform binaries"
+      echo "  dev:run                   - Run application with local config"
+      echo "  dev:run:prod              - Run application with production config"
+      echo "  dev:hot                   - Run with hot reload"
+      echo ""
+      echo "🧪 TESTING"
+      echo "  test:all                  - Run all tests"
+      echo "  test:unit                 - Run unit tests only"
+      echo "  test:integration          - Run integration tests only"
+      echo "  test:race                 - Run tests with race detection"
+      echo "  test:benchmark            - Run benchmark tests"
+      echo "  test:coverage             - Generate coverage report"
+      echo "  test:coverage:open        - Generate enhanced coverage and serve"
+      echo ""
+      echo "🔍 CODE QUALITY"
+      echo "  quality:lint              - Run linter"
+      echo "  quality:fix               - Run linter with auto-fix"
+      echo "  quality:fmt               - Format code"
+      echo "  quality:vet               - Run go vet"
+      echo "  quality:check             - Run all quality checks"
+      echo "  quality:gosec             - Run security scanner"
+      echo "  quality:all               - Run all quality checks with fixes"
+      echo ""
+      echo "📦 DEPENDENCIES"
+      echo "  deps:install              - Install dependencies"
+      echo "  deps:update               - Update all dependencies"
+      echo "  deps:patch                - Update patch versions only"
+      echo "  deps:verify               - Verify dependencies"
+      echo "  deps:vulnerabilities      - Check for vulnerabilities"
+      echo "  deps:outdated             - Check for outdated packages"
+      echo ""
+      echo "🐳 DOCKER"
+      echo "  docker:build              - Build Docker image"
+      echo "  docker:build:multi        - Build multi-platform image"
+      echo "  docker:build:ci           - Build with CI-style caching"
+      echo "  docker:test               - Test Docker image"
+      echo "  docker:scan               - Scan for vulnerabilities"
+      echo "  docker:scan:sarif         - Scan with SARIF output"
+      echo "  docker:run                - Run Docker container"
+      echo "  docker:ci                 - Complete Docker CI workflow"
+      echo ""
+      echo "🔒 SECURITY"
+      echo "  codeql:install            - Install CodeQL CLI"
+      echo "  codeql:analyze            - Run CodeQL analysis"
+      echo "  codeql:analyze:security   - Run security analysis only"
+      echo "  codeql:analyze:quality    - Run quality analysis only"
+      echo "  codeql:ci                 - Complete CodeQL workflow"
+      echo ""
+      echo "🎯 CI/CD SIMULATION"
+      echo "  ci:test                   - Run CI test job"
+      echo "  ci:lint                   - Run CI lint job"
+      echo "  ci:build                  - Run CI build job"
+      echo "  ci:build:all              - Run CI build for all platforms"
+      echo "  ci:security               - Run CI security job"
+      echo "  ci:docker                 - Run CI Docker job"
+      echo "  ci:codeql                 - Run CI CodeQL job"
+      echo "  ci:pr                     - Run all PR checks"
+      echo "  ci:main                   - Run all main branch checks"
+      echo "  ci:quick                  - Run quick checks (test + lint)"
+      echo "  ci:full                   - Run complete CI pipeline"
+      echo "  ci:pre-commit             - Run pre-commit checks"
+      echo ""
+      echo "🔢 VERSION MANAGEMENT"
+      echo "  shared:version:show       - Show all current versions"
+      echo "  shared:version:sync       - Sync versions across all files"
+      echo "  shared:version:sync:dry-run - Show what would be changed"
+      echo "  shared:version:check      - Check version consistency"
+      echo ""
+      echo "🧹 CLEANUP"
+      echo "  clean:all                 - Clean all artifacts"
+      echo "  clean:debug               - Clean debug builds"
+      echo "  clean:release:all         - Clean release builds"
+      echo "  shared:cleanup:go         - Clean Go caches"
+      echo "  shared:cleanup:build      - Clean build artifacts"
+      echo "  shared:cleanup:docker     - Clean Docker system"
+      echo "  shared:cleanup:reports    - Clean report directories"
+      echo "  docker:clean:all          - Clean Docker system"
+      echo "  codeql:clean:all          - Clean CodeQL files"
+      echo ""
+      echo "❓ HELP"
+      echo "  help:show                 - Show detailed help"
+      echo "  shared:info:tasks         - Show this task reference"
+      echo "  shared:info:environment   - Show environment info"
+      echo "  ci:status                 - Show CI status dashboard"
+      echo ""
+      echo "💡 EXAMPLES"
+      echo "  task shared:setup                         # Setup everything"
+      echo "  task shared:setup:tools -- golangci-lint gotestsum  # Install specific tools"
+      echo "  task ci:pr                                # Run PR checks"
+      echo "  task test:coverage:open                   # Generate and view coverage"
+      echo "  task docker:ci                           # Run Docker workflow"
+      echo "  task quality:all                         # Run all quality checks" 

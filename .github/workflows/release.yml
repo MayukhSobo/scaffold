@@ -45,11 +45,8 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y upx-ucl
 
-    - name: Install dependencies
-      run: task deps:install
-
     - name: Build release binaries
-      run: task build:build:release:all
+      run: task ci:build:all
 
     - name: Upload build artifacts
       uses: actions/upload-artifact@v4

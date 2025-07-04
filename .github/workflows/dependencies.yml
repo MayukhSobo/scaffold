@@ -27,14 +27,11 @@ jobs:
       with:
         version: 3.x
 
-    - name: Install dependencies
-      run: task deps:install
-
-    - name: Run vulnerability check
-      run: task deps:vulnerabilities
-
-    - name: Check for outdated dependencies
-      run: task deps:outdated
+    - name: Run security audit
+      run: |
+        task shared:setup
+        task deps:vulnerabilities
+        task deps:outdated
 
   update-dependencies:
     name: Update Dependencies
@@ -58,11 +55,10 @@ jobs:
       with:
         version: 3.x
 
-    - name: Install dependencies
-      run: task deps:install
-
-    - name: Update patch versions
-      run: task deps:patch
+    - name: Update dependencies
+      run: |
+        task shared:setup
+        task deps:patch
 
     - name: Check for changes
       id: changes
@@ -176,11 +172,10 @@ jobs:
       with:
         version: 3.x
 
-    - name: Install dependencies
-      run: task deps:install
-
-    - name: Check licenses
-      run: task deps:licenses
+    - name: Setup and check licenses
+      run: |
+        task shared:setup
+        task deps:licenses
 
     - name: Upload license report
       uses: actions/upload-artifact@v4
@@ -188,4 +183,4 @@ jobs:
         name: license-report
         path: licenses.csv
         retention-days: 30
-      if: always() 
+      if: always() && hashFiles('licenses.csv') != '' 
