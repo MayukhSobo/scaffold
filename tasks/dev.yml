@@ -17,8 +17,8 @@ tasks:
   hot:
     desc: Run the application in development mode with hot reload
     silent: true
-    deps: [build:debug]
     cmds:
+    - task build:debug
     - air
     vars:
       CLI_ARGS: air 
