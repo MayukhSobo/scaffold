@@ -10,5 +10,5 @@ log:
     console:
       driver: "console"
       enabled: true
-      colors: false
-      json_format: true 
+      colors: true
+      json_format: false 
