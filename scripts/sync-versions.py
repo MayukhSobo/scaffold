@@ -73,16 +73,9 @@ class VersionSyncer(ScriptBase):
             ],
             'go.mod': [
                 {
-                    'pattern': r'go\s+([0-9]+\.[0-9]+)',
+                    'pattern': r'go\s+([0-9]+\.[0-9]+(?:\.[0-9]+)?)',
                     'version_key': 'go',
-                    'replacement': lambda v: f'go {v}'
-                }
-            ],
-            'scripts/install-tools.sh': [
-                {
-                    'pattern': r'GOLANGCI_LINT_VERSION="([^"]+)"',
-                    'version_key': 'tools.golangci-lint',
-                    'replacement': lambda v: f'GOLANGCI_LINT_VERSION="{v}"'
+                    'replacement': lambda v: f'go {".".join(v.split(".")[:2])}'  # Use only major.minor for go.mod
                 }
             ]
         }

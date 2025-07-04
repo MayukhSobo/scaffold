@@ -10,9 +10,33 @@ env:
   GO_VERSION: 1.24.4  # Updated from versions.yml via version-helper.sh
 
 jobs:
+  version-check:
+    name: Version Consistency Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Task
+        uses: arduino/setup-task@v2
+        with:
+          version: 3.x
+
+      - name: Verify version consistency
+        run: |
+          task shared:setup:python
+          task shared:version:check
+          python scripts/run.py verify-tool-versions
+
   test:
     name: Test
     runs-on: ubuntu-latest
+    needs: version-check
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -23,3 +47,11 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: '1.24.4'
+          
+      - name: Install Task
+        uses: arduino/setup-task@v2
+        with:
+          version: 3.x
+
+      - name: Run CI test job
+        run: task ci:test

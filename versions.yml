@@ -8,15 +8,15 @@ python: "3.12"
 
 # Go development tools
 tools:
-  golangci-lint: "v2.2.1"
-  gotestsum: "latest"
-  gosec: "latest"
-  govulncheck: "latest"
-  air: "latest"
-  gocov: "latest"
-  gocov-html: "latest"
-  go-cover-treemap: "latest"
-  trivy: "latest"
+  golangci-lint: "2.2.1"
+  gotestsum: "dev"
+  gosec: "2.22.5"
+  govulncheck: "1.1.4"
+  air: "1.62.0"
+  gocov: "1.2.1"
+  gocov-html: "1.4.0"
+  go-cover-treemap: "1.4.6"
+  trivy: "0.64.0"
 
 # GitHub Actions and CI tools
 actions:

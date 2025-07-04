@@ -368,7 +368,7 @@ tasks:
       python scripts/run.py sync-versions --dry-run
 
   version:check:
-    desc: Check version consistency across all files
+    desc: Check version consistency across all files and verify actual tool versions
     silent: true
     cmds:
     - |
@@ -391,8 +391,39 @@ tasks:
           ;;
       esac
       
+      echo "📄 Checking file-based versions..."
       python scripts/run.py sync-versions --check
+      echo "🔧 Checking actual tool versions..."
+      python scripts/run.py verify-tool-versions
       echo "✅ Version consistency checked"
+
+  version:fix:
+    desc: Auto-install correct tool versions to match versions.yml
+    silent: true
+    cmds:
+    - |
+      if [ ! -d ".venv" ]; then
+        echo "❌ Virtual environment not found. Run 'task shared:setup:python' first."
+        exit 1
+      fi
+      
+      # Activate virtual environment
+      SHELL_NAME=$(basename "$SHELL")
+      case "$SHELL_NAME" in
+        "fish")
+          [ -f ".venv/bin/activate.fish" ] && source .venv/bin/activate.fish || source .venv/bin/activate
+          ;;
+        "csh" | "tcsh")
+          [ -f ".venv/bin/activate.csh" ] && source .venv/bin/activate.csh || source .venv/bin/activate
+          ;;
+        *)
+          source .venv/bin/activate
+          ;;
+      esac
+      
+      echo "🔧 Auto-installing correct tool versions to match versions.yml..."
+      python scripts/run.py verify-tool-versions --fix
+      echo "✅ Tools installed with correct versions"
 
   # Common info tasks
   info:environment:
@@ -510,7 +541,8 @@ tasks:
       echo "  shared:version:show       - Show all current versions"
       echo "  shared:version:sync       - Sync versions across all files"
       echo "  shared:version:sync:dry-run - Show what would be changed"
-      echo "  shared:version:check      - Check version consistency"
+      echo "  shared:version:check      - Check version consistency (files + tools)"
+      echo "  shared:version:fix        - Auto-install correct tool versions to match versions.yml"
       echo ""
       echo "🧹 CLEANUP"
       echo "  clean:all                 - Clean all artifacts"

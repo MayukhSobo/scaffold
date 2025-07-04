@@ -1,6 +1,10 @@
 version: "3"
 
 tasks:
+
+
+
+
   # Individual CI job equivalents
   test:
     desc: Run test job (like CI)
@@ -80,6 +84,7 @@ tasks:
     silent: true
     cmds:
     - echo "🔄 Running PR checks..."
+    - task shared:version:check
     - task ci:test
     - task ci:lint
     - task ci:build
@@ -92,6 +97,7 @@ tasks:
     silent: true
     cmds:
     - echo "🚀 Running main branch checks..."
+    - task shared:version:check
     - task ci:test
     - task ci:lint
     - task ci:build:all
@@ -106,6 +112,7 @@ tasks:
     silent: true
     cmds:
     - echo "⚡ Running quick CI checks..."
+    - task shared:version:check
     - task ci:test
     - task ci:lint
     - echo "✅ Quick CI checks completed successfully"
@@ -127,6 +134,7 @@ tasks:
     silent: true
     cmds:
     - echo "🪝 Running pre-commit checks..."
+    - task shared:version:check
     - task quality:all
     - task test:all
     - task deps:vulnerabilities
@@ -149,6 +157,8 @@ tasks:
       echo "  task ci:pre-commit - Pre-commit hook checks"
       echo
       echo "Individual job commands:"
+      echo "  task shared:version:check - Complete version verification (files + tools)"
+      echo "  task shared:version:fix   - Auto-install correct tool versions to match versions.yml"
       echo "  task ci:test       - Test job"
       echo "  task ci:lint       - Lint job"
       echo "  task ci:build      - Build job (current platform)"
