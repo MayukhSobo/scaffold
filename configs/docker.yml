@@ -1,0 +1,36 @@
+env: docker
+http:
+  port: 8000
+security:
+  api_sign:
+    app_key: 123456
+    app_security: 123456
+  jwt:
+    key: 1234
+data:
+  mysql:
+    user: root:123456@tcp(mysql:3306)/user?charset=utf8mb4&parseTime=True&loc=Local
+  redis:
+    addr: redis:6379
+    password: ""
+    db: 0
+    read_timeout: 0.2s
+    write_timeout: 0.2s
+log:
+  level: "info"
+  loggers:
+    console:
+      driver: "console"
+      enabled: true
+      colors: false
+      json_format: true
+    file:
+      driver: "file"
+      enabled: true
+      directory: "logs"
+      filename: "app.log"
+      json_format: true
+      max_size: 100
+      max_backups: 3
+      max_age: 7
+      compress: true 

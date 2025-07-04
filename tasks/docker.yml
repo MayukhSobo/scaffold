@@ -12,7 +12,7 @@ tasks:
     silent: true
     cmds:
     - docker build -t {{.DOCKER_IMAGE_NAME}}:{{.VERSION}} .
-    - echo "✅ Docker image built - {{.DOCKER_IMAGE_NAME}}:{{.VERSION}}"
+    - echo "Docker image built - {{.DOCKER_IMAGE_NAME}}:{{.VERSION}}"
 
   build:multi:
     desc: Build Docker image for multiple platforms (like CI)
@@ -20,7 +20,7 @@ tasks:
     cmds:
     - docker buildx create --use --name multi-builder 2>/dev/null || docker buildx use multi-builder
     - docker buildx build --platform {{.PLATFORMS}} -t {{.IMAGE_NAME}}:{{.VERSION}} -t {{.IMAGE_NAME}}:latest .
-    - echo "✅ Multi-platform Docker image built - {{.IMAGE_NAME}}:{{.VERSION}}"
+    - echo "Multi-platform Docker image built - {{.IMAGE_NAME}}:{{.VERSION}}"
 
   build:ci:
     desc: Build Docker image exactly like CI (with buildx and cache)
@@ -36,7 +36,7 @@ tasks:
         -t {{.IMAGE_NAME}}:latest \
         --load .
     - rm -rf /tmp/.buildx-cache && mv /tmp/.buildx-cache-new /tmp/.buildx-cache 2>/dev/null || true
-    - echo "✅ CI-style Docker image built - {{.IMAGE_NAME}}:{{.VERSION}}"
+    - echo "CI-style Docker image built - {{.IMAGE_NAME}}:{{.VERSION}}"
 
   run:
     desc: Run Docker container
@@ -49,35 +49,35 @@ tasks:
     silent: true
     cmds:
     - docker run -d -p 8080:8080 --name {{.DOCKER_IMAGE_NAME}}-dev {{.DOCKER_IMAGE_NAME}}:{{.VERSION}}
-    - echo "✅ Docker container started in background - {{.DOCKER_IMAGE_NAME}}:{{.VERSION}}"
+    - echo "Docker container started in background - {{.DOCKER_IMAGE_NAME}}:{{.VERSION}}"
 
   test:
     desc: Test Docker image (like CI)
     silent: true
     cmds:
-    - echo "🧪 Testing Docker image..."
+    - echo "Testing Docker image..."
     - docker run --rm -d --name test-container -p 8081:8080 {{.DOCKER_IMAGE_NAME}}:{{.VERSION}}
     - sleep 5
-    - echo "✅ Container started successfully"
+    - echo "Container started successfully"
     - docker stop test-container
-    - echo "✅ Docker image test completed successfully"
+    - echo "Docker image test completed successfully"
 
   scan:
     desc: Run Trivy vulnerability scanner (like CI)
     silent: true
     cmds:
-    - echo "🔍 Scanning Docker image for vulnerabilities..."
+    - echo "Scanning Docker image for vulnerabilities..."
     - trivy image --format table {{.DOCKER_IMAGE_NAME}}:{{.VERSION}}
-    - echo "✅ Vulnerability scan completed"
+    - echo "Vulnerability scan completed"
 
   scan:sarif:
     desc: Run Trivy vulnerability scanner with SARIF output (like CI)
     silent: true
     cmds:
     - mkdir -p reports
-    - echo "🔍 Scanning Docker image for vulnerabilities (SARIF output)..."
+    - echo "Scanning Docker image for vulnerabilities (SARIF output)..."
     - trivy image --format sarif --output reports/trivy-results.sarif {{.DOCKER_IMAGE_NAME}}:{{.VERSION}}
-    - echo "✅ Vulnerability scan completed - results saved to reports/trivy-results.sarif"
+    - echo "Vulnerability scan completed - results saved to reports/trivy-results.sarif"
 
   push:
     desc: Push Docker image to registry
@@ -85,16 +85,16 @@ tasks:
     cmds:
     - docker push {{.IMAGE_NAME}}:{{.VERSION}}
     - docker push {{.IMAGE_NAME}}:latest
-    - echo "✅ Docker image pushed - {{.IMAGE_NAME}}:{{.VERSION}}"
+    - echo "Docker image pushed - {{.IMAGE_NAME}}:{{.VERSION}}"
 
   login:
     desc: Login to GitHub Container Registry
     silent: true
     cmds:
-    - echo "🔐 Logging into GitHub Container Registry..."
+    - echo "Logging into GitHub Container Registry..."
     - echo "Please provide your GitHub Personal Access Token with packages:write permission"
     - docker login {{.REGISTRY}} -u $GITHUB_USERNAME
-    - echo "✅ Successfully logged into {{.REGISTRY}}"
+    - echo "Successfully logged into {{.REGISTRY}}"
 
   # CI-like workflow
   ci:
@@ -104,7 +104,7 @@ tasks:
     - task: build:ci
     - task: test
     - task: scan
-    - echo "✅ Complete Docker CI workflow completed successfully"
+    - echo "Complete Docker CI workflow completed successfully"
 
   # Cleanup tasks
   clean:
@@ -112,14 +112,14 @@ tasks:
     silent: true
     cmds:
     - docker rmi {{.DOCKER_IMAGE_NAME}}:{{.VERSION}} 2>/dev/null || echo "Image not found - {{.DOCKER_IMAGE_NAME}}:{{.VERSION}}"
-    - echo "✅ Docker image cleanup completed"
+    - echo "Docker image cleanup completed"
 
   clean:all:
     desc: Remove all unused Docker images, containers, and networks
     silent: true
     cmds:
     - docker system prune -f
-    - echo "✅ Docker system cleanup completed"
+    - echo "Docker system cleanup completed"
 
   clean:buildx:
     desc: Clean buildx cache and builders
@@ -129,7 +129,7 @@ tasks:
     - docker buildx rm multi-builder 2>/dev/null || true
     - docker buildx rm ci-builder 2>/dev/null || true
     - rm -rf /tmp/.buildx-cache 2>/dev/null || true
-    - echo "✅ Buildx cleanup completed"
+    - echo "Buildx cleanup completed"
 
   # Utility tasks
   logs:
@@ -143,10 +143,85 @@ tasks:
     silent: true
     cmds:
     - docker stop $(docker ps -q --filter ancestor={{.DOCKER_IMAGE_NAME}}:{{.VERSION}}) 2>/dev/null || echo "No running containers found"
-    - echo "✅ Container stopped"
+    - echo "Container stopped"
 
   inspect:
     desc: Inspect Docker image
     silent: true
     cmds:
     - docker inspect {{.DOCKER_IMAGE_NAME}}:{{.VERSION}}
+
+  # Docker Compose tasks for development
+  compose:up:
+    desc: Start all services with docker-compose
+    silent: true
+    cmds:
+    - docker-compose up -d
+    - echo "All services started"
+    - echo "Scaffold App on port 8000"
+    - echo "Adminer on port 8080"
+    - echo "MySQL on port 3306"
+
+  compose:down:
+    desc: Stop all services with docker-compose
+    silent: true
+    cmds:
+    - docker-compose down
+    - echo "All services stopped"
+
+  compose:build:
+    desc: Build and restart scaffold service
+    silent: true
+    cmds:
+    - docker-compose build scaffold
+    - docker-compose up -d scaffold
+    - echo "Scaffold service rebuilt and restarted"
+
+  compose:logs:
+    desc: View logs from all services (use -f to follow)
+    silent: true
+    vars:
+      FLAGS: '{{default "" .CLI_ARGS}}'
+    cmds:
+    - docker-compose logs {{.FLAGS}}
+
+  compose:logs:scaffold:
+    desc: View logs from scaffold service only (use -f to follow)
+    silent: true
+    vars:
+      FLAGS: '{{default "" .CLI_ARGS}}'
+    cmds:
+    - docker-compose logs {{.FLAGS}} scaffold
+
+  compose:restart:
+    desc: Restart all services
+    silent: true
+    cmds:
+    - docker-compose restart
+    - echo "All services restarted"
+
+  compose:mysql:
+    desc: Connect to MySQL database
+    silent: true
+    cmds:
+    - docker-compose exec mysql mysql -u root -p123456
+
+  compose:adminer:
+    desc: Open Adminer in browser with MySQL credentials
+    silent: true
+    cmds:
+    - echo "Opening Adminer at localhost:8080 with MySQL credentials"
+    - |
+      if command -v open &> /dev/null; then
+        open "http://localhost:8080/?server=mysql&username=root&password=123456&db=user"
+      elif command -v xdg-open &> /dev/null; then
+        xdg-open "http://localhost:8080/?server=mysql&username=root&password=123456&db=user"
+      else
+        echo "Please open http://localhost:8080/?server=mysql&username=root&password=123456&db=user in your browser"
+      fi
+
+  compose:status:
+    desc: Show status of all services
+    silent: true
+    cmds:
+    - docker-compose ps

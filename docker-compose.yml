@@ -1,0 +1,34 @@
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: scaffold-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: 123456
+      MYSQL_DATABASE: user
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+  adminer:
+    image: adminer:latest
+    container_name: scaffold-adminer
+    ports:
+      - "8080:8080"
+    depends_on:
+      - mysql
+
+  scaffold:
+    build: .
+    container_name: scaffold-app
+    ports:
+      - "8000:8000"
+    depends_on:
+      - mysql
+    volumes:
+      - ./configs:/app/configs
+      - ./logs:/app/logs
+    command: ["./server", "--config=configs/docker.yml"]
+
+volumes:
+  mysql_data: 
