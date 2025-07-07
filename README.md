@@ -110,57 +110,6 @@ scaffold/
 
 This project follows a classic layered architecture pattern to ensure separation of concerns, making it modular, scalable, and easy to maintain.
 
-```mermaid
-graph TD
-    subgraph "External"
-        Client("👤<br/>Client")
-    end
-
-    subgraph "Application Entry & Web Layer"
-        Router("🌐<br/>Gin Router")
-        Middleware("🛡️<br/>Middleware")
-        Handler("📥<br/>User Handler")
-    end
-
-    subgraph "Business Logic"
-        Service("业务<br/>User Service")
-    end
-
-    subgraph "Data Access Layer"
-        Repository("🗄️<br/>User Repository")
-        GORM("🐘<br/>GORM")
-        Database("💾<br/>Database")
-    end
-
-    subgraph "Shared Packages"
-        Config("⚙️<br/>Config (Viper)")
-        Logger("📝<br/>Logger (Zerolog)")
-        Model("📦<br/>User Model")
-    end
-
-    Client -- "HTTP Request" --> Router
-    Router -- "Routes" --> Middleware
-    Middleware -- "Next()" --> Handler
-    Handler -- "Calls" --> Service
-
-    Service -- "Uses" --> Repository
-    Service -- "Uses" --> Model
-
-    Repository -- "Uses" --> GORM
-    Repository -- "Uses" --> Model
-    GORM -- "SQL Queries" --> Database
-
-    Handler -- "HTTP Response" --> Client
-
-    Service -- "Logs with" --> Logger
-    Repository -- "Logs with" --> Logger
-    Handler -- "Logs with" --> Logger
-
-    Service -- "Reads" --> Config
-    Repository -- "Reads" --> Config
-    Router -- "Reads" --> Config
-```
-
 ### Layer Descriptions
 
 - **Web Layer**: Receives and responds to HTTP requests. Includes the Gin router, middleware for cross-cutting concerns (like logging, CORS), and handlers for request parsing and validation.
@@ -184,14 +133,14 @@ graph TD
 1.  **Clone the repository:**
 
     ```bash
-    git clone https://github.com/thedatageek/scaffold.git
+    git clone https://github.com/MayukhSobo/scaffold.git
     cd scaffold
     ```
 
 2.  **Install dependencies:**
     The project uses Go Modules. The required tools and dependencies are installed automatically when you run a task for the first time. To install them manually:
     ```bash
-    task deps:deps
+    task deps:install
     ```
 
 ---
@@ -200,7 +149,7 @@ graph TD
 
 ```bash
 # Clone and setup
-git clone https://github.com/thedatageek/scaffold.git
+git clone https://github.com/MayukhSobo/scaffold.git
 cd scaffold
 task setup
 
