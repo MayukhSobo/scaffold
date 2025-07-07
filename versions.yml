@@ -15,8 +15,10 @@ tools:
   air: "1.62.0"
   gocov: "1.2.1"
   gocov-html: "1.4.0"
-  go-cover-treemap: "1.4.6"
-  trivy: "0.64.0"
+  go-cover-treemap: "1.5.0"
+  trivy: "0.64.1"
+  goose: "3.24.3"
+  codeql-cli: "2.16.1"
 
 # GitHub Actions and CI tools
 actions:
@@ -29,13 +31,6 @@ actions:
   upload-artifact: "v4"
   download-artifact: "v4"
   cache: "v4"
-
-# Security and analysis tools
-security:
-  codeql-cli: "2.16.1"
-  trivy: "latest"
-  gosec: "latest"
-  govulncheck: "latest"
 
 # Build and deployment
 build:

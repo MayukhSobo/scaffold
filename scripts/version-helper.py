@@ -179,6 +179,7 @@ def load_common_versions() -> None:
     # Define commonly used versions mapping
     common_versions = {
         'GO_VERSION': get_version('go'),
+        'PYTHON_VERSION': get_version('python'),
         'GOLANGCI_LINT_VERSION': get_version('tools.golangci-lint'),
         'GOTESTSUM_VERSION': get_version('tools.gotestsum'),
         'GOSEC_VERSION': get_version('tools.gosec'),
@@ -188,7 +189,7 @@ def load_common_versions() -> None:
         'GOCOV_HTML_VERSION': get_version('tools.gocov-html'),
         'GO_COVER_TREEMAP_VERSION': get_version('tools.go-cover-treemap'),
         'TRIVY_VERSION': get_version('tools.trivy'),
-        'CODEQL_CLI_VERSION': get_version('security.codeql-cli'),
+        'CODEQL_CLI_VERSION': get_version('tools.codeql-cli'),
         'TASK_VERSION': get_version('build.task'),
     }
     

@@ -166,7 +166,7 @@ tasks:
     desc: Stop all services with docker-compose
     silent: true
     cmds:
-    - docker-compose down
+    - docker-compose down -v
     - echo "All services stopped"
 
   compose:build:

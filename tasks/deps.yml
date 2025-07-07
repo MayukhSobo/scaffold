@@ -3,13 +3,49 @@ version: "3"
 tasks:
   # Dependency management
   install:
-    desc: Install/update dependencies
+    desc: Install all project dependencies (Go modules and tools)
+    silent: true
+    deps: [install:go, install:tools]
+    cmds:
+    - echo "✅ All dependencies installed successfully."
+
+  install:go:
+    desc: Install/update Go module dependencies
+    internal: true
     silent: true
     cmds:
     - go mod download
     - go mod tidy
     - echo "Dependencies installed"
 
+  install:tools:
+    desc: Install all development tools
+    internal: true
+    silent: true
+    cmds:
+    - |
+      if [ ! -d ".venv" ]; then
+        echo "❌ Virtual environment not found. Run 'task shared:setup:python' first."
+        exit 1
+      fi
+      
+      # Activate virtual environment
+      SHELL_NAME=$(basename "$SHELL")
+      case "$SHELL_NAME" in
+        "fish")
+          [ -f ".venv/bin/activate.fish" ] && source .venv/bin/activate.fish || source .venv/bin/activate
+          ;;
+        "csh" | "tcsh")
+          [ -f ".venv/bin/activate.csh" ] && source .venv/bin/activate.csh || source .venv/bin/activate
+          ;;
+        *)
+          source .venv/bin/activate
+          ;;
+      esac
+      
+      echo "📦 Installing development tools..."
+      python scripts/run.py install-tools
+          
   update:
     desc: Update all dependencies to latest versions
     silent: true
@@ -27,11 +63,33 @@ tasks:
     - echo "Dependencies updated to latest patch versions"
 
   verify:
-    desc: Verify dependencies have expected content
+    desc: Verify Go modules and tool versions
     silent: true
     cmds:
+    - echo "➡️  Verifying Go module checksums..."
     - go mod verify
-    - echo "Dependencies verified successfully"
+    - echo "➡️  Verifying installed tool versions against versions.yml..."
+    - |
+      if [ ! -d ".venv" ]; then
+        echo "❌ Virtual environment not found. Run 'task shared:setup:python' first."
+        exit 1
+      fi
+      
+      # Activate virtual environment
+      SHELL_NAME=$(basename "$SHELL")
+      case "$SHELL_NAME" in
+        "fish")
+          [ -f ".venv/bin/activate.fish" ] && source .venv/bin/activate.fish || source .venv/bin/activate
+          ;;
+        "csh" | "tcsh")
+          [ -f ".venv/bin/activate.csh" ] && source .venv/bin/activate.csh || source .venv/bin/activate
+          ;;
+        *)
+          source .venv/bin/activate
+          ;;
+      esac
+      
+      python scripts/run.py verify-tool-versions
 
   vendor:
     desc: Make vendored copy of dependencies
@@ -62,15 +120,37 @@ tasks:
     - go clean -modcache
     - go clean -testcache
     - go clean -fuzzcache
-    - echo "All Go caches cleaned"
+    - echo "✅ All Go caches cleaned"
 
   outdated:
-    desc: Check for outdated dependencies
+    desc: Check for outdated Go modules and tools
     silent: true
     cmds:
+    - echo "➡️  Checking for outdated Go modules..."
     - |
-      echo "Checking for outdated dependencies..."
-      go list -u -m all | grep -E '\[.*\]' || echo "All dependencies are up to date"
+      go list -u -m all | grep -E '\[.*\]' || echo "✅ All Go modules are up to date"
+    - echo "➡️  Checking for outdated development tools..."
+    - |
+      if [ ! -d ".venv" ]; then
+        echo "❌ Virtual environment not found. Run 'task shared:setup:python' first."
+        exit 1
+      fi
+      
+      # Activate virtual environment
+      SHELL_NAME=$(basename "$SHELL")
+      case "$SHELL_NAME" in
+        "fish")
+          [ -f ".venv/bin/activate.fish" ] && source .venv/bin/activate.fish || source .venv/bin/activate
+          ;;
+        "csh" | "tcsh")
+          [ -f ".venv/bin/activate.csh" ] && source .venv/bin/activate.csh || source .venv/bin/activate
+          ;;
+        *)
+          source .venv/bin/activate
+          ;;
+      esac
+      
+      python scripts/run.py verify-tool-versions --check-outdated
 
   vulnerabilities:
     desc: Check for security vulnerabilities in dependencies
@@ -98,3 +178,141 @@ tasks:
       done
       echo "License report generated at licenses.csv"
       echo "Note: This is a basic license check. Consider using tools like 'go-licenses' for more accurate detection."
+
+# Version management tasks
+version:show:
+  desc: Show all current versions from versions.yml
+  silent: true
+  cmds:
+  - |
+    if [ ! -d ".venv" ]; then
+      echo "❌ Virtual environment not found. Run 'task shared:setup:python' first."
+      exit 1
+    fi
+    
+    # Activate virtual environment
+    SHELL_NAME=$(basename "$SHELL")
+    case "$SHELL_NAME" in
+      "fish")
+        [ -f ".venv/bin/activate.fish" ] && source .venv/bin/activate.fish || source .venv/bin/activate
+        ;;
+      "csh" | "tcsh")
+        [ -f ".venv/bin/activate.csh" ] && source .venv/bin/activate.csh || source .venv/bin/activate
+        ;;
+      *)
+        source .venv/bin/activate
+        ;;
+    esac
+    
+    python scripts/run.py version-helper list
+
+version:sync:
+  desc: Sync versions from versions.yml to all files
+  silent: true
+  cmds:
+  - |
+    if [ ! -d ".venv" ]; then
+      echo "❌ Virtual environment not found. Run 'task shared:setup:python' first."
+      exit 1
+    fi
+    
+    # Activate virtual environment
+    SHELL_NAME=$(basename "$SHELL")
+    case "$SHELL_NAME" in
+      "fish")
+        [ -f ".venv/bin/activate.fish" ] && source .venv/bin/activate.fish || source .venv/bin/activate
+        ;;
+      "csh" | "tcsh")
+        [ -f ".venv/bin/activate.csh" ] && source .venv/bin/activate.csh || source .venv/bin/activate
+        ;;
+      *)
+        source .venv/bin/activate
+        ;;
+    esac
+    
+    python scripts/run.py sync-versions
+    echo "✅ Versions synchronized"
+
+version:sync:dry-run:
+  desc: Show what would be changed by version sync
+  silent: true
+  cmds:
+  - |
+    if [ ! -d ".venv" ]; then
+      echo "❌ Virtual environment not found. Run 'task shared:setup:python' first."
+      exit 1
+    fi
+    
+    # Activate virtual environment
+    SHELL_NAME=$(basename "$SHELL")
+    case "$SHELL_NAME" in
+      "fish")
+        [ -f ".venv/bin/activate.fish" ] && source .venv/bin/activate.fish || source .venv/bin/activate
+        ;;
+      "csh" | "tcsh")
+        [ -f ".venv/bin/activate.csh" ] && source .venv/bin/activate.csh || source .venv/bin/activate
+        ;;
+      *)
+        source .venv/bin/activate
+        ;;
+    esac
+    
+    python scripts/run.py sync-versions --dry-run
+
+version:check:
+  desc: Check version consistency across all files and verify actual tool versions
+  silent: true
+  cmds:
+  - |
+    if [ ! -d ".venv" ]; then
+      echo "❌ Virtual environment not found. Run 'task shared:setup:python' first."
+      exit 1
+    fi
+    
+    # Activate virtual environment
+    SHELL_NAME=$(basename "$SHELL")
+    case "$SHELL_NAME" in
+      "fish")
+        [ -f ".venv/bin/activate.fish" ] && source .venv/bin/activate.fish || source .venv/bin/activate
+        ;;
+      "csh" | "tcsh")
+        [ -f ".venv/bin/activate.csh" ] && source .venv/bin/activate.csh || source .venv/bin/activate
+        ;;
+      *)
+        source .venv/bin/activate
+        ;;
+    esac
+    
+    echo "📄 Checking file-based versions..."
+    python scripts/run.py sync-versions --check
+    echo "🔧 Checking actual tool versions..."
+    python scripts/run.py verify-tool-versions
+    echo "✅ Version consistency checked"
+
+version:fix:
+  desc: Auto-install correct tool versions to match versions.yml
+  silent: true
+  cmds:
+  - |
+    if [ ! -d ".venv" ]; then
+      echo "❌ Virtual environment not found. Run 'task shared:setup:python' first."
+      exit 1
+    fi
+    
+    # Activate virtual environment
+    SHELL_NAME=$(basename "$SHELL")
+    case "$SHELL_NAME" in
+      "fish")
+        [ -f ".venv/bin/activate.fish" ] && source .venv/bin/activate.fish || source .venv/bin/activate
+        ;;
+      "csh" | "tcsh")
+        [ -f ".venv/bin/activate.csh" ] && source .venv/bin/activate.csh || source .venv/bin/activate
+        ;;
+      *)
+        source .venv/bin/activate
+        ;;
+    esac
+    
+    echo "🔧 Auto-installing correct tool versions to match versions.yml..."
+    python scripts/run.py verify-tool-versions --fix
+    echo "✅ Tools installed with correct versions" 

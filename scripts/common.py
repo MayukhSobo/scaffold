@@ -11,6 +11,7 @@ import subprocess
 import importlib.util
 from pathlib import Path
 from typing import List, Dict, Optional, Tuple, Any
+import shutil
 
 # Rich imports with fallback
 try:
@@ -103,14 +104,19 @@ class CommandRunner:
             self.logger.error(f"Command execution failed: {e}")
             return False, str(e)
     
-    def run_with_status(self, cmd: List[str], status_msg: str, description: str = "") -> Tuple[bool, str]:
-        """Run a command with rich status display"""
-        if HAS_RICH:
-            with console.status(status_msg):
-                return self.run(cmd, description)
+    def run_with_status(self, cmd: List[str], status_msg: str) -> Tuple[bool, str]:
+        """Run a command within a rich status context"""
+        if not has_rich():
+            self.logger.info(status_msg)
+            return self.run(cmd)
+
+        console = get_console()
+        success, output = self.run(cmd)
+        if success:
+            console.print(f"✅ {status_msg} [green]Success[/green]")
         else:
-            print(status_msg)
-            return self.run(cmd, description)
+            console.print(f"❌ {status_msg} [red]Failed[/red]")
+        return success, output
 
 class FileManager:
     """Unified file operations with error handling"""
@@ -274,7 +280,6 @@ class ScriptBase:
     
     def check_binary_exists(self, binary_name: str) -> bool:
         """Check if a binary exists in PATH"""
-        import shutil
         return shutil.which(binary_name) is not None
     
     def get_project_root(self) -> Path:

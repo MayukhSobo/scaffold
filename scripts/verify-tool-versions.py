@@ -8,8 +8,10 @@ Usage: python verify-tool-versions.py [--fix] [--verbose]
 import re
 import subprocess
 import argparse
+import json
+import shutil
 from pathlib import Path
-from typing import Dict, Optional, List, Tuple
+from typing import Dict, Optional, List, Tuple, Set
 
 # Import common utilities
 from common import ScriptBase, has_rich, get_console
@@ -60,47 +62,86 @@ class ToolVersionVerifier(ScriptBase):
                 'cmd': ['trivy', '--version'],
                 'pattern': r'Version: ([0-9]+\.[0-9]+\.[0-9]+)',
                 'version_key': 'tools.trivy',
-                'go_package': None  # trivy is not a Go tool, installed differently
+                'go_package': None  # trivy is not a Go tool
+            },
+            'goose': {
+                'cmd': ['goose', '--version'],
+                'pattern': r'goose version: v([0-9]+\.[0-9]+\.[0-9]+)',
+                'version_key': 'tools.goose',
+                'go_package': 'github.com/pressly/goose/v3/cmd/goose'
+            },
+            'gocov': {
+                'cmd': ['go', 'version', '-m'], # Special check
+                'pattern': r'\tmod\t.*\t(v[0-9]+\.[0-9]+\.[0-9]+)',
+                'version_key': 'tools.gocov',
+                'go_package': 'github.com/axw/gocov/gocov',
+                'use_go_version_m': True
+            },
+            'gocov-html': {
+                'cmd': ['go', 'version', '-m'], # Special check
+                'pattern': r'\tmod\t.*\t(v[0-9]+\.[0-9]+\.[0-9]+)',
+                'version_key': 'tools.gocov-html',
+                'go_package': 'github.com/matm/gocov-html/cmd/gocov-html',
+                'use_go_version_m': True
+            },
+            'go-cover-treemap': {
+                'cmd': ['go', 'version', '-m'], # Special check
+                'pattern': r'\tmod\t.*\t(v[0-9]+\.[0-9]+\.[0-9]+)',
+                'version_key': 'tools.go-cover-treemap',
+                'go_package': 'github.com/nikolaydubina/go-cover-treemap',
+                'use_go_version_m': True
+            },
+            'codeql-cli': {
+                'cmd': ['codeql', 'version', '--format=terse'],
+                'pattern': r'([0-9]+\.[0-9]+\.[0-9]+)',
+                'version_key': 'tools.codeql-cli',
+                'go_package': None
             }
         }
     
-    def _run_version_command(self, tool_name: str, config: Dict) -> Optional[str]:
-        """Run version command for a tool and extract version"""
+    def _run_version_command(self, tool_name: str, config: Dict) -> Tuple[Optional[str], Optional[str]]:
+        """Run version command for a tool and extract version and any warnings."""
+        warning = None
+        cmd = config['cmd']
+
+        # For tools without a version flag, check binary build info
+        if config.get('use_go_version_m'):
+            tool_path = shutil.which(tool_name)
+            if not tool_path:
+                return None, f"{tool_name} not found in PATH"
+            cmd = cmd + [tool_path]
+
         try:
             result = subprocess.run(
-                config['cmd'], 
+                cmd,
                 capture_output=True, 
                 text=True, 
                 timeout=10
             )
             
             if result.returncode != 0:
-                self.logger.warn(f"Failed to get {tool_name} version: {result.stderr.strip()}")
-                return None
+                warning = f"Failed to get {tool_name} version: {result.stderr.strip()}"
+                return None, warning
             
             output = result.stdout + result.stderr
             match = re.search(config['pattern'], output)
             
             if match:
                 version = match.group(1)
-                # Clean up version (remove 'dev', handle special cases)
                 if version == 'dev' or version == 'devel':
-                    self.logger.warn(f"{tool_name} reports 'dev' version - installed from source")
-                    return 'dev'
-                return version
+                    warning = f"{tool_name} reports 'dev' version - installed from source"
+                    return 'dev', warning
+                return version.lstrip('v'), None
             else:
-                self.logger.warn(f"Could not parse {tool_name} version from: {output.strip()}")
-                return None
+                warning = f"Could not parse {tool_name} version from: {output.strip()}"
+                return None, warning
                 
         except subprocess.TimeoutExpired:
-            self.logger.error(f"Timeout getting {tool_name} version")
-            return None
+            return None, f"Timeout getting {tool_name} version"
         except FileNotFoundError:
-            self.logger.warn(f"{tool_name} not found in PATH")
-            return None
+            return None, f"{tool_name} not found in PATH"
         except Exception as e:
-            self.logger.error(f"Error getting {tool_name} version: {e}")
-            return None
+            return None, f"Error getting {tool_name} version: {e}"
     
     def _get_expected_version(self, version_key: str) -> Optional[str]:
         """Get expected version from versions.yml"""
@@ -131,100 +172,65 @@ class ToolVersionVerifier(ScriptBase):
             "Verifying actual installed tool versions",
             title="🔧 Tool Version Verification"
         )
-        
+
+        # --- Phase 1: Gather all data silently ---
+        results = []
         all_good = True
         
-        if has_rich():
-            console = get_console()
-            from rich.table import Table
-            from rich.progress import Progress, SpinnerColumn, TextColumn
+        for tool_name, config in self.version_commands.items():
+            installed_version, warning = self._run_version_command(tool_name, config)
+            expected_version = self._get_expected_version(config['version_key'])
             
-            # Create results table
-            table = Table(title="🔍 Tool Version Check Results")
-            table.add_column("Tool", style="cyan", no_wrap=True)
-            table.add_column("Installed", style="yellow")
-            table.add_column("Expected", style="blue")
-            table.add_column("Status", style="bold")
-            
-            with Progress(
-                SpinnerColumn(),
-                TextColumn("[bold blue]{task.description}"),
-                console=console
-            ) as progress:
-                task = progress.add_task("Checking tool versions...", total=len(self.version_commands))
-                
-                for tool_name, config in self.version_commands.items():
-                    progress.update(task, description=f"Checking {tool_name}...")
-                    
-                    installed_version = self._run_version_command(tool_name, config)
-                    expected_version = self._get_expected_version(config['version_key'])
-                    
-                    if installed_version is None:
-                        table.add_row(tool_name, "❌ Not found", expected_version or "?", "❌ Missing")
-                        all_good = False
-                        self.mismatches.append({
-                            'tool': tool_name,
-                            'installed': None,
-                            'expected': expected_version,
-                            'status': 'missing'
-                        })
-                    elif expected_version is None:
-                        table.add_row(tool_name, installed_version, "❌ Not in versions.yml", "❌ Undefined")
-                        all_good = False
-                    elif self._versions_match(installed_version, expected_version):
-                        table.add_row(tool_name, installed_version, expected_version, "✅ Match")
-                    else:
-                        table.add_row(tool_name, installed_version, expected_version, "❌ Mismatch")
-                        all_good = False
-                        self.mismatches.append({
-                            'tool': tool_name,
-                            'installed': installed_version,
-                            'expected': expected_version,
-                            'status': 'mismatch'
-                        })
-                    
-                    progress.advance(task)
-            
-            console.print(table)
-            console.print()
-            
-            # Show summary
-            if all_good:
-                from rich.panel import Panel
-                console.print(Panel(
-                    "✅ All tool versions match versions.yml",
-                    title="🎉 All Good!",
-                    style="green"
-                ))
-            else:
-                from rich.panel import Panel
-                console.print(Panel(
-                    f"❌ Found {len(self.mismatches)} version mismatches",
-                    title="⚠️  Mismatches Detected",
-                    style="red"
-                ))
+            status = "✅ Match"
+            if installed_version is None:
+                status = "❌ Missing"
+                all_good = False
+                self.mismatches.append({
+                    'tool': tool_name, 'installed': None, 'expected': expected_version, 'status': 'missing'
+                })
+            elif expected_version is None:
+                status = "❌ Undefined"
+                all_good = False
+            elif not self._versions_match(installed_version, expected_version):
+                status = "❌ Mismatch"
+                all_good = False
+                self.mismatches.append({
+                    'tool': tool_name, 'installed': installed_version, 'expected': expected_version, 'status': 'mismatch'
+                })
+
+            results.append({
+                "tool": tool_name,
+                "installed": installed_version or "N/A",
+                "expected": expected_version or "?",
+                "status": status,
+                "warning": warning
+            })
+
+        # --- Phase 2: Print clean report ---
+        table = self.rich.create_table(title="🔍 Tool Version Check Results")
+        table.add_column("Tool", style="cyan", no_wrap=True)
+        table.add_column("Installed", style="yellow")
+        table.add_column("Expected", style="blue")
+        table.add_column("Status", style="bold")
+        
+        warnings_to_show = []
+        for res in results:
+            table.add_row(res['tool'], res['installed'], res['expected'], res['status'])
+            if res['warning']:
+                warnings_to_show.append(res['warning'])
+        
+        self.rich.print_table(table)
+        print() # Add a newline for spacing
+
+        if warnings_to_show:
+            self.rich.print_panel("\n".join(f"⚠️  {w}" for w in warnings_to_show), title="Notes", style="yellow")
+            print()
+
+        # --- Phase 3: Show summary and handle fixes ---
+        if all_good:
+            self.rich.print_panel("✅ All tool versions match versions.yml", title="🎉 All Good!", style="green")
         else:
-            # Fallback for environments without rich
-            for tool_name, config in self.version_commands.items():
-                print(f"Checking {tool_name}...")
-                installed_version = self._run_version_command(tool_name, config)
-                expected_version = self._get_expected_version(config['version_key'])
-                
-                if installed_version and expected_version:
-                    if self._versions_match(installed_version, expected_version):
-                        print(f"  ✅ {tool_name}: {installed_version} (matches)")
-                    else:
-                        print(f"  ❌ {tool_name}: {installed_version} (expected {expected_version})")
-                        all_good = False
-                        self.mismatches.append({
-                            'tool': tool_name,
-                            'installed': installed_version,
-                            'expected': expected_version,
-                            'status': 'mismatch'
-                        })
-                elif not installed_version:
-                    print(f"  ❌ {tool_name}: Not found")
-                    all_good = False
+            self.rich.print_panel(f"❌ Found {len(self.mismatches)} version mismatches", title="⚠️  Mismatches Detected", style="red")
         
         if self.fix_versions and self.mismatches:
             self._fix_tool_versions()
@@ -325,98 +331,142 @@ class ToolVersionVerifier(ScriptBase):
             title="🔧 Auto-fix Tool Versions"
         )
         
-        if has_rich():
-            console = get_console()
-            from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TimeRemainingColumn
+        console = get_console()
+        from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TimeRemainingColumn
+        
+        # Filter mismatches to only Go tools that can be installed
+        fixable_mismatches = []
+        for mismatch in self.mismatches:
+            if mismatch['status'] in ['mismatch', 'missing'] and mismatch['expected']:
+                tool_name = mismatch['tool']
+                if tool_name in self.version_commands:
+                    go_package = self.version_commands[tool_name].get('go_package')
+                    if go_package:
+                        fixable_mismatches.append(mismatch)
+                    else:
+                        self.logger.warn(f"⚠️  Cannot auto-install {tool_name} (not a Go tool)")
+                        
+        if not fixable_mismatches:
+            self.logger.warn("No fixable mismatches found (all tools are either correct or not Go tools)")
+            return
+        
+        with Progress(
+            SpinnerColumn(),
+            TextColumn("[bold blue]{task.description}"),
+            BarColumn(),
+            TimeRemainingColumn(),
+            console=console
+        ) as progress:
+            task = progress.add_task("Installing tools...", total=len(fixable_mismatches))
             
-            # Filter mismatches to only Go tools that can be installed
-            fixable_mismatches = []
-            for mismatch in self.mismatches:
-                if mismatch['status'] in ['mismatch', 'missing'] and mismatch['expected']:
-                    tool_name = mismatch['tool']
-                    if tool_name in self.version_commands:
-                        go_package = self.version_commands[tool_name].get('go_package')
-                        if go_package:
-                            fixable_mismatches.append(mismatch)
-                        else:
-                            self.logger.warn(f"⚠️  Cannot auto-install {tool_name} (not a Go tool)")
-                            
-            if not fixable_mismatches:
-                self.logger.warn("No fixable mismatches found (all tools are either correct or not Go tools)")
-                return
+            success_count = 0
+            for mismatch in fixable_mismatches:
+                tool_name = mismatch['tool']
+                expected_version = mismatch['expected']
+                go_package = self.version_commands[tool_name]['go_package']
+                
+                progress.update(task, description=f"Installing {tool_name} v{expected_version}...")
+                
+                if self._install_go_tool(tool_name, go_package, expected_version):
+                    success_count += 1
+                
+                progress.advance(task)
             
-            with Progress(
-                SpinnerColumn(),
-                TextColumn("[bold blue]{task.description}"),
-                BarColumn(),
-                TimeRemainingColumn(),
-                console=console
-            ) as progress:
-                task = progress.add_task("Installing tools...", total=len(fixable_mismatches))
-                
-                success_count = 0
-                for mismatch in fixable_mismatches:
-                    tool_name = mismatch['tool']
-                    expected_version = mismatch['expected']
-                    go_package = self.version_commands[tool_name]['go_package']
-                    
-                    progress.update(task, description=f"Installing {tool_name} v{expected_version}...")
-                    
-                    if self._install_go_tool(tool_name, go_package, expected_version):
-                        success_count += 1
-                    
-                    progress.advance(task)
-                
-                # Show summary
-                if success_count == len(fixable_mismatches):
-                    from rich.panel import Panel
-                    console.print(Panel(
-                        f"✅ Successfully installed {success_count} tools",
-                        title="🎉 All Tools Fixed!",
-                        style="green"
-                    ))
-                else:
-                    from rich.panel import Panel
-                    console.print(Panel(
-                        f"⚠️  Installed {success_count}/{len(fixable_mismatches)} tools",
-                        title="Partial Success",
-                        style="yellow"
-                    ))
-                    
+            # Show summary
+            if success_count == len(fixable_mismatches):
+                from rich.panel import Panel
+                console.print(Panel(
+                    f"✅ Successfully installed {success_count} tools",
+                    title="🎉 All Tools Fixed!",
+                    style="green"
+                ))
+            else:
+                from rich.panel import Panel
+                console.print(Panel(
+                    f"⚠️  Installed {success_count}/{len(fixable_mismatches)} tools",
+                    title="Partial Success",
+                    style="yellow"
+                ))
+
+    def check_outdated_tools(self):
+        """Check for outdated Go tools."""
+        self.rich.print_panel("Checking for outdated tools...", style="bold blue")
+        
+        outdated_tools = []
+        for tool_name, config in self.version_commands.items():
+            if not config.get('go_package'):
+                self.logger.verbose(f"Skipping update check for {tool_name} (not a Go tool).")
+                continue
+
+            package = config['go_package']
+            # Strip subdirectories like /cmd/ for the check
+            repo_path = re.sub(r'/(v[0-9]+|cmd)/.*', '', package)
+
+            current_version = self.version_helper.get_version(config['version_key'])
+            
+            self.logger.verbose(f"Checking {repo_path} for updates...")
+            success, result = self.cmd_runner.run(['go', 'list', '-m', '-u', '-json', f'{repo_path}@latest'])
+            
+            if not success:
+                self.logger.error(f"Failed to check for updates for {repo_path}: {result}")
+                continue
+
+            try:
+                data = json.loads(result)
+                if 'Update' in data:
+                    latest_version = data['Update']['Version']
+                    if latest_version != current_version:
+                        outdated_tools.append({
+                            "tool": tool_name,
+                            "package": repo_path,
+                            "current": current_version,
+                            "latest": latest_version
+                        })
+            except json.JSONDecodeError:
+                self.logger.error(f"Failed to parse JSON for {repo_path}.")
+        
+        if not outdated_tools:
+            self.logger.success("All Go tools in versions.yml are up to date.")
         else:
-            # Fallback for environments without rich
-            for mismatch in self.mismatches:
-                if mismatch['status'] in ['mismatch', 'missing'] and mismatch['expected']:
-                    tool_name = mismatch['tool']
-                    if tool_name in self.version_commands:
-                        go_package = self.version_commands[tool_name].get('go_package')
-                        if go_package:
-                            self._install_go_tool(tool_name, go_package, mismatch['expected'])
+            table = self.rich.create_table(title="Outdated Go Tools")
+            table.add_column("Tool", style="cyan")
+            table.add_column("Go Package", style="white")
+            table.add_column("Current Version", style="yellow")
+            table.add_column("Latest Version", style="green")
+            for tool in outdated_tools:
+                table.add_row(tool['tool'], tool['package'], tool['current'], tool['latest'])
+            self.rich.print_table(table)
 
 def main():
     """Main entry point"""
-    parser = argparse.ArgumentParser(description='Verify tool versions against versions.yml')
-    parser.add_argument('--fix', action='store_true', help='Auto-install correct tool versions to match versions.yml')
-    parser.add_argument('--verbose', '-v', action='store_true', help='Enable verbose output')
-    
+    parser = argparse.ArgumentParser(description="Verify tool versions against versions.yml")
+    parser.add_argument(
+        '--fix',
+        action='store_true',
+        help='Automatically install the correct version of mismatched tools.'
+    )
+    parser.add_argument(
+        '--check-outdated',
+        action='store_true',
+        help='Check for outdated versions of Go tools.'
+    )
+    parser.add_argument(
+        '--verbose',
+        action='store_true',
+        help='Enable verbose output for debugging.'
+    )
     args = parser.parse_args()
-    
-    # Create verifier instance
+
     verifier = ToolVersionVerifier(fix_versions=args.fix, verbose=args.verbose)
     
-    # Show header
-    verifier.rich.print_panel(
-        "Tool Version Verification System",
-        title="Ensuring tool versions match versions.yml",
-        style="bold blue"
-    )
-    
-    success = verifier.verify_tool_versions()
-    
-    if not success:
-        verifier.exit_with_error()
+    if args.check_outdated:
+        verifier.check_outdated_tools()
     else:
-        verifier.exit_with_success()
+        success = verifier.verify_tool_versions()
+        if not success:
+            verifier.exit_with_error("Version verification failed.")
+        else:
+            verifier.exit_with_success("All tool versions are correct.")
 
 if __name__ == '__main__':
     main() 
