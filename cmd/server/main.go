@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/MayukhSobo/scaffold/internal/repository"
+	"github.com/MayukhSobo/scaffold/internal/repository/users"
 	"github.com/MayukhSobo/scaffold/internal/server"
 	"github.com/MayukhSobo/scaffold/internal/service"
 	"github.com/MayukhSobo/scaffold/pkg/config"
@@ -71,13 +71,12 @@ func main() {
 	logger.Info("Database initialized")
 
 	// Create repository layer
-	queries := repository.New(db)
-	userRepo := repository.NewUserRepository(queries)
+	userQueries := users.New(db)
 	logger.Info("Repository layer initialized")
 
 	// Create service layer
 	baseService := service.NewService(logger)
-	userService := service.NewUserService(baseService, userRepo)
+	userService := service.NewUserService(baseService, userQueries)
 	logger.Info("Service layer initialized")
 
 	// Start server with custom setup to connect business routes

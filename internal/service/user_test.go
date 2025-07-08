@@ -6,7 +6,7 @@ import (
 	"database/sql"
 	"testing"
 
-	"github.com/MayukhSobo/scaffold/internal/repository"
+	"github.com/MayukhSobo/scaffold/internal/repository/users"
 	"github.com/MayukhSobo/scaffold/pkg/log"
 	_ "github.com/go-sql-driver/mysql"
 )
@@ -23,10 +23,9 @@ func setupTests(t *testing.T) (UserService, *sql.DB) {
 	var buf bytes.Buffer
 	logger := log.NewConsoleLoggerWithWriter(log.InfoLevel, &buf, false)
 
-	queries := repository.New(db)
-	userRepo := repository.NewUserRepository(queries)
+	userQueries := users.New(db)
 	baseService := NewService(logger)
-	userService := NewUserService(baseService, userRepo)
+	userService := NewUserService(baseService, userQueries)
 
 	return userService, db
 }
