@@ -107,7 +107,7 @@ scaffold/
 ---
 
 ## 🏛️ Architecture
-
+```mermaid
 graph TB
     subgraph "Layered Architecture (Unchanged)"
         subgraph "Controller Layer"
@@ -170,7 +170,7 @@ graph TB
     class R1,R2,R3 repository
     class DB database
     class CONTAINER container
-
+```
 ### Layer Descriptions
 
 - **Web Layer**: Receives and responds to HTTP requests. Includes the Gin router, middleware for cross-cutting concerns (like logging, CORS), and handlers for request parsing and validation.
