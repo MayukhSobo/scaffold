@@ -1,9 +1,46 @@
 env: docker
+
+# Application settings
+app:
+  name: "Scaffold v1.0.0"
+  version: "1.0.0"
+
 http:
-  port: 8000
-data:
+  host: app
+  port: 12001
+
+# Server configuration
+server:
+  shutdown_timeout: "30s"
+  
+  # Middleware configuration
+  middleware:
+    recover: true
+    request_id: true
+    logger: true
+    cors: true
+    logger_format: "[${time}] ${status} - ${method} ${path} - ${ip} - ${latency}\n"
+  
+  # CORS configuration
+  cors:
+    allow_origins: "http://localhost:3000,http://localhost:3001,http://localhost:8080,http://frontend:3000"
+    allow_methods: "GET,POST,PUT,DELETE,OPTIONS"
+    allow_headers: "Origin,Content-Type,Accept,Authorization,X-Requested-With"
+    allow_credentials: true
+    max_age: 7200
+
+db:
   mysql:
-    user: root:123456@tcp(mysql:3306)/user?charset=utf8mb4&parseTime=True&loc=Local
+    host: mysql
+    port: 3306
+    user: scaffold
+    password: bXlfc2VjdXJlX3Bhc3N3b3JkXzEyMw==
+    database: user
+  adminer:
+    host: adminer
+    port: 8888
+    theme: nette
+
 log:
   level: "info"
   loggers:

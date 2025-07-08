@@ -1,24 +1,28 @@
 package repository
 
 import (
-	"github.com/MayukhSobo/scaffold/internal/model"
+	"context"
 )
 
 type UserRepository interface {
-	FirstById(id int64) (*model.User, error)
-}
-type userRepository struct {
-	*Repository
+	GetAdminUsers(ctx context.Context) ([]User, error)
+	GetPendingVerificationUsers(ctx context.Context) ([]User, error)
 }
 
-func NewUserRepository(repository *Repository) UserRepository {
+type userRepository struct {
+	*Queries
+}
+
+func NewUserRepository(q *Queries) UserRepository {
 	return &userRepository{
-		Repository: repository,
+		Queries: q,
 	}
 }
 
-func (r *userRepository) FirstById(id int64) (*model.User, error) {
-	var user model.User
-	// TODO: query db
-	return &user, nil
+func (r *userRepository) GetAdminUsers(ctx context.Context) ([]User, error) {
+	return r.Queries.GetAdminUsers(ctx)
+}
+
+func (r *userRepository) GetPendingVerificationUsers(ctx context.Context) ([]User, error) {
+	return r.Queries.GetPendingVerificationUsers(ctx)
 }

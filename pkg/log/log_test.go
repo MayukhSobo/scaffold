@@ -33,6 +33,29 @@ func TestConsoleWithWriter(t *testing.T) {
 	}
 }
 
+func TestFormattedLogging(t *testing.T) {
+	var buf bytes.Buffer
+	logger := NewConsoleLoggerWithWriter(DebugLevel, &buf, false)
+
+	// Test formatted logging methods
+	logger.Infof("Test formatted message: %s %d", "test", 42)
+	logger.Errorf("Test error: %v", "some error")
+	logger.Debugf("Debug with number: %d", 123)
+	logger.Warnf("Warning with float: %.2f", 3.14)
+
+	if buf.Len() == 0 {
+		t.Error("Nothing was written to buffer for formatted logging")
+	}
+
+	output := buf.String()
+	if !contains(output, "test") {
+		t.Error("Formatted output should contain 'test'")
+	}
+	if !contains(output, "42") {
+		t.Error("Formatted output should contain '42'")
+	}
+}
+
 func TestFile(t *testing.T) {
 	logFile := "test_file.log"
 	defer func() { _ = os.Remove(logFile) }() // Clean up
@@ -54,6 +77,10 @@ func TestFile(t *testing.T) {
 	// Test logging
 	logger.Info("File test message")
 	logger.Error("File error", String("component", "test"))
+
+	// Test formatted logging
+	logger.Infof("File formatted: %s", "test")
+	logger.Errorf("File error formatted: %v", "error message")
 
 	// Verify file was created
 	if _, err := os.Stat(logFile); os.IsNotExist(err) {
@@ -84,6 +111,7 @@ func TestMulti(t *testing.T) {
 
 	// Test logging to multiple outputs
 	multiLogger.Info("Multi logger test message")
+	multiLogger.Infof("Multi logger formatted: %s", "test")
 
 	// Verify console output
 	if consoleBuf.Len() == 0 {
@@ -126,6 +154,7 @@ func TestWithContext(t *testing.T) {
 	}
 
 	contextLogger.Info("Test message with context")
+	contextLogger.Infof("Test formatted with context: %s", "test")
 }
 
 func TestFieldHelpers(t *testing.T) {
@@ -167,6 +196,12 @@ func TestLevels(t *testing.T) {
 	logger.Warn("Warn level test")
 	logger.Error("Error level test")
 
+	// Test formatted versions
+	logger.Debugf("Debug formatted: %s", "test")
+	logger.Infof("Info formatted: %d", 42)
+	logger.Warnf("Warn formatted: %.2f", 3.14)
+	logger.Errorf("Error formatted: %v", "error")
+
 	output := buf.String()
 	if output == "" {
 		t.Error("No output generated for log levels")
@@ -193,6 +228,7 @@ func TestFileConfig(t *testing.T) {
 	}
 
 	logger.Warn("Config test message")
+	logger.Warnf("Config test formatted: %s", "test")
 
 	// Verify file was created
 	if _, err := os.Stat(config.Filename); os.IsNotExist(err) {
@@ -235,14 +271,21 @@ func testLoggerInterface(t *testing.T, logger Logger, loggerType string) {
 	logger.Warn("Warn test", String("type", loggerType))
 	logger.Error("Error test", String("type", loggerType))
 
+	// Test formatted methods
+	logger.Infof("Info formatted test: %s", loggerType)
+	logger.Warnf("Warn formatted test: %s", loggerType)
+	logger.Errorf("Error formatted test: %s", loggerType)
+
 	// Test WithFields
 	contextLogger := logger.WithFields(String("type", loggerType))
 	contextLogger.Info("Fields test")
+	contextLogger.Infof("Fields formatted test: %s", "test")
 
 	// Test WithContext
 	ctx := context.Background()
 	ctxLogger := logger.WithContext(ctx)
 	ctxLogger.Info("Context test")
+	ctxLogger.Infof("Context formatted test: %s", "test")
 }
 
 // Benchmarks
@@ -253,6 +296,17 @@ func BenchmarkConsole(b *testing.B) {
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
 			logger.Info("Benchmark message")
+		}
+	})
+}
+
+func BenchmarkFormattedLogging(b *testing.B) {
+	logger := NewConsoleLoggerWithWriter(InfoLevel, io.Discard, false)
+
+	b.ResetTimer()
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			logger.Infof("Formatted benchmark message: %s %d", "test", 42)
 		}
 	})
 }
@@ -329,6 +383,7 @@ func TestFileLoggerDebug(t *testing.T) {
 	logger := NewFileLogger(DebugLevel, config)
 	logger.Debug("this should be logged")
 	logger.Info("this should also be logged")
+	logger.Debugf("this debug formatted should be logged: %s", "test")
 
 	// Verify file was created and has content
 	content, err := os.ReadFile(logFile)
@@ -369,6 +424,7 @@ func TestMultiLoggerDebug(t *testing.T) {
 
 	multiLogger := NewMultiLogger(consoleLogger, fileLogger)
 	multiLogger.Debug("multi-logger debug message")
+	multiLogger.Debugf("multi-logger debug formatted: %s", "test")
 
 	// Verify console output
 	if consoleBuf.Len() == 0 {
@@ -388,6 +444,7 @@ func TestLoggerWithEmptyFields(t *testing.T) {
 	// Test that no panic occurs with empty fields
 	logger.WithFields().Info("Test with empty fields")
 	logger.Info("Test with no fields")
+	logger.Infof("Test formatted with no args")
 
 	if buf.Len() == 0 {
 		t.Error("No output with empty fields")
@@ -419,4 +476,19 @@ func TestNewFileLoggerDefaults(t *testing.T) {
 	}
 }
 
-// Simple mock logger for testing
+// Helper function to check if a string contains a substring
+func contains(s, substr string) bool {
+	return len(s) >= len(substr) && findSubstring(s, substr)
+}
+
+func findSubstring(s, substr string) bool {
+	if len(substr) == 0 {
+		return true
+	}
+	for i := 0; i <= len(s)-len(substr); i++ {
+		if s[i:i+len(substr)] == substr {
+			return true
+		}
+	}
+	return false
+}

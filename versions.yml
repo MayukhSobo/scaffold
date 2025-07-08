@@ -8,17 +8,21 @@ python: "3.12"
 
 # Go development tools
 tools:
-  golangci-lint: "2.2.1"
-  gotestsum: "dev"
-  gosec: "2.22.5"
-  govulncheck: "1.1.4"
-  air: "1.62.0"
-  gocov: "1.2.1"
-  gocov-html: "1.4.0"
-  go-cover-treemap: "1.5.0"
-  trivy: "0.64.1"
-  goose: "3.24.3"
-  codeql-cli: "2.16.1"
+  # Go Tools
+  goose: v3.20.0
+  goimports: v0.20.0
+  golangci-lint: v1.58.1
+  gomock: v1.6.0
+  sqlc: v1.26.0
+  gotestsum: dev
+  gosec: 2.22.5
+  govulncheck: 1.1.4
+  air: 1.62.0
+  gocov: 1.2.1
+  gocov-html: 1.4.0
+  go-cover-treemap: 1.5.0
+  trivy: 0.64.1
+  codeql-cli: 2.16.1
 
 # GitHub Actions and CI tools
 actions:
@@ -38,4 +42,12 @@ build:
   task: "3.x"
 
 # Version for this configuration format
-schema_version: "1.0.0" 
+schema_version: "1.0.0"
+
+GOLANGCILINT_VERSION: v1.58.1
+GOMOCK_VERSION: v1.6.0
+SQLC_VERSION: v1.26.0
+
+# Docker Images
+GO_IMAGE: "golang:1.22.5-alpine"
+ALPINE_IMAGE: "alpine:3.20" 

@@ -45,7 +45,11 @@ tasks:
       
       echo "📦 Installing development tools..."
       python scripts/run.py install-tools
-          
+      go install github.com/pressly/goose/v3/cmd/goose@{{.GOOSE_VERSION}}
+      go install golang.org/x/tools/cmd/goimports@{{.GOIMPORTS_VERSION}}
+      go install github.com/golangci/golangci-lint/cmd/golangci-lint@{{.GOLANGCILINT_VERSION}}
+      go install github.com/sqlc-dev/sqlc/cmd/sqlc@{{.SQLC_VERSION}}
+
   update:
     desc: Update all dependencies to latest versions
     silent: true

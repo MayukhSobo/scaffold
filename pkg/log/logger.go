@@ -3,6 +3,8 @@ package log
 import (
 	"context"
 	"time"
+
+	"github.com/rs/zerolog"
 )
 
 // Level represents different log levels.
@@ -21,6 +23,7 @@ const (
 // Logger interface defines the logging contract.
 // This interface is framework-agnostic and can be implemented by any logger.
 type Logger interface {
+	// Structured logging methods
 	Debug(msg string, fields ...Field)
 	Info(msg string, fields ...Field)
 	Warn(msg string, fields ...Field)
@@ -28,8 +31,36 @@ type Logger interface {
 	Fatal(msg string, fields ...Field)
 	Panic(msg string, fields ...Field)
 
+	// Formatted logging methods
+	Debugf(format string, args ...interface{})
+	Infof(format string, args ...interface{})
+	Warnf(format string, args ...interface{})
+	Errorf(format string, args ...interface{})
+	Fatalf(format string, args ...interface{})
+	Panicf(format string, args ...interface{})
+
 	WithFields(fields ...Field) Logger
 	WithContext(ctx context.Context) Logger
+}
+
+// parseLogLevel converts string to zerolog level.
+func parseLogLevel(level string) zerolog.Level {
+	switch level {
+	case "debug":
+		return zerolog.DebugLevel
+	case "info":
+		return zerolog.InfoLevel
+	case "warn":
+		return zerolog.WarnLevel
+	case "error":
+		return zerolog.ErrorLevel
+	case "fatal":
+		return zerolog.FatalLevel
+	case "panic":
+		return zerolog.PanicLevel
+	default:
+		return zerolog.InfoLevel
+	}
 }
 
 // Field represents a key-value pair for structured logging.

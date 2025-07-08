@@ -12,6 +12,7 @@ import os
 import tempfile
 import requests
 import zipfile
+import tarfile
 from pathlib import Path
 from typing import List, Dict, Optional, Tuple
 
@@ -98,10 +99,20 @@ class ToolInstaller(ScriptBase):
                 'install_method': self._install_codeql_cli,
                 'check_method': self._check_binary_tool,
                 'description': 'CodeQL CLI'
+            },
+            'sqlc': {
+                'version_key': 'tools.sqlc',
+                'install_method': self._install_sqlc,
+                'check_method': self._check_sqlc,
+                'description': 'SQLC'
             }
         }
     
     def _check_binary_tool(self, tool_name: str) -> bool:
+        """Check if a binary tool is available"""
+        return self.check_binary_exists(tool_name)
+    
+    def _check_sqlc(self, tool_name: str) -> bool:
         """Check if a binary tool is available"""
         return self.check_binary_exists(tool_name)
     
@@ -242,27 +253,17 @@ class ToolInstaller(ScriptBase):
         return success
     
     def _install_trivy_linux(self) -> bool:
-        """Install trivy on Linux"""
-        # Try different package managers
-        if self.check_binary_exists('apt-get'):
-            # Debian/Ubuntu
-            commands = [
-                ['sudo', 'apt-get', 'update'],
-                ['sudo', 'apt-get', 'install', '-y', 'wget', 'apt-transport-https', 'gnupg', 'lsb-release'],
-                ['wget', '-qO', '-', 'https://aquasecurity.github.io/trivy-repo/deb/public.key'],
-                ['sudo', 'apt-key', 'add', '-'],
-                ['sudo', 'apt-get', 'update'],
-                ['sudo', 'apt-get', 'install', '-y', 'trivy']
-            ]
-            
-            for cmd in commands:
-                success, output = self.cmd_runner.run(cmd)
-                if not success:
-                    return False
-            return True
+        """Install trivy on Linux using apt-get"""
+        if not self.check_binary_exists('apt-get'):
+            self.logger.error("apt-get not found. Cannot install Trivy automatically.")
+            return False
         
-        self.logger.error("Unsupported Linux distribution. Please install Trivy manually.")
-        return False
+        self.cmd_runner.run(['sudo', 'apt-get', 'install', 'wget', 'apt-transport-https', 'gnupg', 'lsb-release'])
+        self.cmd_runner.run(['wget', '-qO', '-', 'https://aquasecurity.github.io/trivy-repo/deb/public.key', '|', 'sudo', 'apt-key', 'add', '-'])
+        self.cmd_runner.run(['echo', 'deb', 'https://aquasecurity.github.io/trivy-repo/deb', '$(lsb_release', '-cs)', 'main', '|', 'sudo', 'tee', '-a', '/etc/apt/sources.list.d/trivy.list'])
+        self.cmd_runner.run(['sudo', 'apt-get', 'update'])
+        success, output = self.cmd_runner.run(['sudo', 'apt-get', 'install', '-y', 'trivy'])
+        return success
     
     def _install_codeql_cli(self, tool_name: str, config: Dict) -> bool:
         """Install CodeQL CLI from GitHub releases."""
@@ -281,25 +282,31 @@ class ToolInstaller(ScriptBase):
         else:
             self.logger.error(f"Unsupported OS for CodeQL CLI: {system}")
             return False
+        
+        # Determine architecture for download URL
+        if arch == "arm64" and system == "darwin":
+            # For Apple Silicon, the binary might be under osx-arm64, but check official naming
+            # For now, let's assume it's included in osx64 or a specific name is needed
+            pass
 
-        download_url = f"https://github.com/github/codeql-cli-binaries/releases/download/v{version}/codeql-{platform_str}.zip"
+        download_url = f"https://github.com/github/codeql-cli-binaries/releases/download/{version}/codeql-{platform_str}.zip"
         
         # Get GOPATH/bin to determine install location
         success, gopath_output = self.cmd_runner.run(['go', 'env', 'GOPATH'])
         if not success:
-            self.logger.error("Failed to get GOPATH for CodeQL CLI installation.")
+            self.logger.error("Failed to get GOPATH for CodeQL installation.")
             return False
         install_dir = Path(gopath_output.strip().rstrip('/')) / "bin"
         install_dir.mkdir(parents=True, exist_ok=True)
-        codeql_install_base_dir = install_dir.parent / "codeql-cli"
+        codeql_install_base_dir = install_dir.parent / "codeql"
         codeql_install_base_dir.mkdir(parents=True, exist_ok=True)
 
-        self.logger.info(f"Downloading CodeQL CLI v{version} to {codeql_install_base_dir}...")
+        self.logger.info(f"Downloading CodeQL v{version} to {codeql_install_base_dir}...")
         
         try:
             # Check if already installed
-            if (codeql_install_base_dir / "codeql" / "codeql").exists():
-                self.logger.info("CodeQL CLI already seems to be installed.")
+            if (codeql_install_base_dir / "codeql").exists():
+                self.logger.info("CodeQL seems to be already installed.")
             else:
                 with tempfile.TemporaryDirectory() as tmpdir:
                     zip_path = Path(tmpdir) / "codeql.zip"
@@ -315,7 +322,7 @@ class ToolInstaller(ScriptBase):
                         zip_ref.extractall(codeql_install_base_dir)
             
             # Create symlink in gopath/bin
-            binary_path = codeql_install_base_dir / "codeql" / "codeql"
+            binary_path = codeql_install_base_dir / "codeql"
             symlink_path = install_dir / "codeql"
             
             if binary_path.exists():
@@ -328,19 +335,81 @@ class ToolInstaller(ScriptBase):
                 binary_path.chmod(0o755)
                 
                 # Recursively set execute permissions on all files in the tools dir
-                tools_dir = codeql_install_base_dir / "codeql" / "tools"
+                tools_dir = codeql_install_base_dir / "tools"
                 if tools_dir.is_dir():
                     for f in tools_dir.rglob('*'):
                         if f.is_file():
                             f.chmod(0o755)
 
-                self.logger.success(f"✅ CodeQL CLI symlinked to {symlink_path}")
+                self.logger.success(f"✅ CodeQL symlinked to {symlink_path}")
                 return True
             else:
                 self.logger.error(f"Could not find 'codeql' binary in the extracted archive.")
                 return False
         except Exception as e:
-            self.logger.error(f"An error occurred during CodeQL CLI installation: {e}")
+            self.logger.error(f"An error occurred during CodeQL installation: {e}")
+            return False
+
+    def _install_sqlc(self, tool_name: str, config: Dict) -> bool:
+        """Install SQLC from GitHub releases."""
+        version = self.version_helper.get_version(config['version_key'])
+        if not version:
+            self.logger.error("SQLC version not found in versions.yml")
+            return False
+
+        system = platform.system().lower()
+        arch = platform.machine().lower()
+
+        if system == "darwin":
+            platform_str = "darwin"
+        elif system == "linux":
+            platform_str = "linux"
+        else:
+            self.logger.error(f"Unsupported OS for SQLC: {system}")
+            return False
+
+        if arch == "arm64":
+            arch_str = "arm64"
+        elif arch == "x86_64":
+            arch_str = "amd64"
+        else:
+            self.logger.error(f"Unsupported ARCH for SQLC: {arch}")
+            return False
+
+        download_url = f"https://github.com/sqlc-dev/sqlc/releases/download/{version}/sqlc_{version[1:]}_{platform_str}_{arch_str}.tar.gz"
+        
+        # Get GOPATH/bin to determine install location
+        success, gopath_output = self.cmd_runner.run(['go', 'env', 'GOPATH'])
+        if not success:
+            self.logger.error("Failed to get GOPATH for SQLC installation.")
+            return False
+        install_dir = Path(gopath_output.strip().rstrip('/')) / "bin"
+        install_dir.mkdir(parents=True, exist_ok=True)
+        
+        self.logger.info(f"Downloading SQLC {version}...")
+        
+        try:
+            with tempfile.TemporaryDirectory() as tmpdir:
+                tar_path = Path(tmpdir) / "sqlc.tar.gz"
+                
+                # Download
+                response = requests.get(download_url, stream=True, timeout=120)
+                response.raise_for_status()
+                with open(tar_path, 'wb') as f:
+                    shutil.copyfileobj(response.raw, f)
+                
+                # Unzip
+                with tarfile.open(tar_path, 'r:gz') as tar_ref:
+                    tar_ref.extractall(tmpdir)
+
+                # Move sqlc binary to install_dir
+                binary_path = Path(tmpdir) / "sqlc"
+                shutil.move(str(binary_path), str(install_dir / "sqlc"))
+                
+                self.logger.success(f"✅ SQLC installed to {install_dir / 'sqlc'}")
+                return True
+        except Exception as e:
+            self.logger.error(f"An error occurred during SQLC installation: {e}")
             return False
 
     def install_tool(self, tool_name: str) -> bool:

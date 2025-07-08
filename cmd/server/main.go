@@ -2,16 +2,12 @@ package main
 
 import (
 	"fmt"
-	"os"
-	"os/signal"
-	"syscall"
 
+	"github.com/MayukhSobo/scaffold/internal/repository"
+	"github.com/MayukhSobo/scaffold/internal/server"
+	"github.com/MayukhSobo/scaffold/internal/service"
 	"github.com/MayukhSobo/scaffold/pkg/config"
 	"github.com/MayukhSobo/scaffold/pkg/log"
-
-	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/middleware/cors"
-	"github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/spf13/viper"
 )
 
@@ -34,59 +30,28 @@ func init() {
 func main() {
 	logger.Info("Starting application...")
 
-	// Create Fiber app
-	app := fiber.New(fiber.Config{
-		AppName: "Scaffold v1.0.0",
+	// Create dependencies
+	logger.Info("Initializing dependencies...")
+
+	// Create database connection (currently mock, but this is where you'd connect to real DB)
+	db := repository.NewDb()
+	logger.Info("Database initialized")
+
+	// Create repository layer
+	repo := repository.NewRepository(logger, db)
+	userRepo := repository.NewUserRepository(repo)
+	logger.Info("Repository layer initialized")
+
+	// Create service layer
+	baseService := service.NewService(logger)
+	userService := service.NewUserService(baseService, userRepo)
+	logger.Info("Service layer initialized")
+
+	// Start server with custom setup to connect business routes
+	logger.Info("Starting server with business routes...")
+	server.RunWithCustomSetup(conf, logger, func(s *server.FiberServer) {
+		// Setup business routes with dependencies
+		s.SetupBusinessRoutes(userService)
+		logger.Info("Business routes registered successfully")
 	})
-
-	// Add middleware
-	app.Use(recover.New())
-	app.Use(cors.New())
-
-	// Routes
-	app.Get("/ping", func(c *fiber.Ctx) error {
-		logger.Info("Ping endpoint called")
-		return c.JSON(fiber.Map{
-			"message": "pong",
-			"status":  "ok",
-		})
-	})
-
-	app.Get("/health", func(c *fiber.Ctx) error {
-		logger.Info("Health endpoint called")
-		return c.JSON(fiber.Map{
-			"status": "healthy",
-			"env":    conf.GetString("env"),
-		})
-	})
-
-	// Get port from config
-	port := conf.GetString("http.port")
-	if port == "" {
-		port = "8000"
-	}
-
-	// Start server in a goroutine
-	go func() {
-		logger.Info(fmt.Sprintf("Server starting on port %s", port))
-		if err := app.Listen(":" + port); err != nil {
-			logger.Error("Server startup failed", log.Error(err))
-			os.Exit(1)
-		}
-	}()
-
-	// Wait for interrupt signal to gracefully shutdown the server
-	quit := make(chan os.Signal, 1)
-	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
-	<-quit
-
-	logger.Info("Shutting down server...")
-
-	// Gracefully shutdown the server
-	if err := app.Shutdown(); err != nil {
-		logger.Error("Server forced to shutdown", log.Error(err))
-		os.Exit(1)
-	}
-
-	logger.Info("Server exited")
 }

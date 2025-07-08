@@ -1,21 +1,41 @@
 env: local
+
+# Application settings
+app:
+  name: "Scaffold v1.0.0"
+  version: "1.0.0"
+
 http:
   port: 8000
-security:
-  api_sign:
-    app_key: 123456
-    app_security: 123456
-  jwt:
-    key: 1234
-data:
+
+# Server configuration
+server:
+  shutdown_timeout: "30s"
+  
+  # Middleware configuration
+  middleware:
+    recover: true
+    request_id: true
+    logger: true
+    cors: true
+    logger_format: "[${time}] ${status} - ${method} ${path} - ${ip} - ${latency}\n"
+  
+  # CORS configuration
+  cors:
+    allow_origins: "http://localhost:3000,http://localhost:3001,http://localhost:8080,http://127.0.0.1:3000"
+    allow_methods: "GET,POST,PUT,DELETE,OPTIONS"
+    allow_headers: "Origin,Content-Type,Accept,Authorization,X-Requested-With"
+    allow_credentials: true
+    max_age: 7200
+
+db:
   mysql:
-    user: root:123456@tcp(127.0.0.1:3380)/user?charset=utf8mb4&parseTime=True&loc=Local
-  redis:
-    addr: 127.0.0.1:6350
-    password: ""
-    db: 0
-    read_timeout: 0.2s
-    write_timeout: 0.2s
+    host: 127.0.0.1
+    port: 3306
+    user: scaffold
+    password: my_secure_password_123
+    database: user
+
 log:
   level: "debug"
   loggers:
@@ -24,16 +44,16 @@ log:
       enabled: true
       colors: true
       json_format: false
-    file:
-      driver: "file"
-      enabled: true
-      directory: "logs"
-      filename: "app.log"
-      json_format: true
-      max_size: 100
-      max_backups: 3
-      max_age: 7
-      compress: true
+    # file:
+    #   driver: "file"
+    #   enabled: true
+    #   directory: "logs"
+    #   filename: "app.log"
+    #   json_format: true
+    #   max_size: 100
+    #   max_backups: 3
+    #   max_age: 7
+    #   compress: true
   # Future loggers can be easily added:
   # datadog_logger:
   #   enabled: false

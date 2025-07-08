@@ -152,15 +152,42 @@ tasks:
     - docker inspect {{.DOCKER_IMAGE_NAME}}:{{.VERSION}}
 
   # Docker Compose tasks for development
-  compose:up:
-    desc: Start all services with docker-compose
+  # All tasks automatically sync with configs/docker.yml - just change the config and run the task!
+  
+  compose:config:
+    desc: Show current Docker Compose configuration from configs/docker.yml
     silent: true
+    cmds:
+    - echo "Current Docker Compose Configuration (from configs/docker.yml):"
+    - task: _activate_venv
+    - python scripts/docker/docker-compose-env.py configs/docker.yml --format env 2>/dev/null || echo "Error reading configuration"
+
+  compose:sync:
+    desc: Sync configuration files from configs/docker.yml (internal task)
+    internal: true
+    silent: true
+    sources:
+      - configs/docker.yml
+    generates:
+      - docker-compose.yml
+      - .env
+      - db/mysql-init.sql
+    cmds:
+    - echo "🔄 Syncing Docker Compose with configs/docker.yml..."
+    - task: _activate_venv
+    - python scripts/docker/generate-docker-compose.py configs/docker.yml --output docker-compose.yml 2>/dev/null
+    - python scripts/docker/docker-compose-env.py configs/docker.yml --format compose > .env 2>/dev/null
+    - python scripts/database/generate-mysql-init.py configs/docker.yml 2>/dev/null
+    - echo "✅ Configuration synced from configs/docker.yml"
+
+  compose:up:
+    desc: Start all services with docker-compose (automatically syncs configs/docker.yml)
+    silent: true
+    deps: [compose:sync]
     cmds:
     - docker-compose up -d
     - echo "All services started"
-    - echo "Scaffold App on port 8000"
-    - echo "Adminer on port 8080"
-    - echo "MySQL on port 3306"
+    - task: _show_service_urls
 
   compose:down:
     desc: Stop all services with docker-compose
@@ -170,12 +197,12 @@ tasks:
     - echo "All services stopped"
 
   compose:build:
-    desc: Build and restart scaffold service
+    desc: Build Docker images and generate configuration files (automatically syncs configs/docker.yml)
     silent: true
+    deps: [compose:sync]
     cmds:
-    - docker-compose build scaffold
-    - docker-compose up -d scaffold
-    - echo "Scaffold service rebuilt and restarted"
+    - docker-compose build
+    - echo "Docker images built successfully"
 
   compose:logs:
     desc: View logs from all services (use -f to follow)
@@ -185,39 +212,61 @@ tasks:
     cmds:
     - docker-compose logs {{.FLAGS}}
 
-  compose:logs:scaffold:
-    desc: View logs from scaffold service only (use -f to follow)
+  compose:logs:app:
+    desc: View logs from app service only (use -f to follow)
     silent: true
     vars:
       FLAGS: '{{default "" .CLI_ARGS}}'
     cmds:
-    - docker-compose logs {{.FLAGS}} scaffold
+    - task: _activate_venv
+    - |
+      APP_HOST=$(python scripts/docker/docker-compose-env.py configs/docker.yml --format env | grep "^HTTP_HOST=" | cut -d'=' -f2)
+      docker-compose logs {{.FLAGS}} "$APP_HOST"
 
   compose:restart:
-    desc: Restart all services
+    desc: Restart all services (automatically syncs configs/docker.yml)
     silent: true
+    deps: [compose:sync]
     cmds:
     - docker-compose restart
     - echo "All services restarted"
 
   compose:mysql:
-    desc: Connect to MySQL database
+    desc: Connect to MySQL database using dynamic configuration
+    aliases: [db:shell]
     silent: true
     cmds:
-    - docker-compose exec mysql mysql -u root -p123456
+    - task: _activate_venv
+    - |
+      DB_CONFIG=$(python scripts/docker/docker-compose-env.py configs/docker.yml --format env)
+      DB_SERVICE=$(echo "$DB_CONFIG" | grep "^DB_HOST=" | cut -d'=' -f2)
+      DB_USER=$(echo "$DB_CONFIG" | grep "^DB_USER=" | cut -d'=' -f2)
+      DB_PASSWORD=$(echo "$DB_CONFIG" | grep "^DB_PASSWORD=" | cut -d'=' -f2)
+      
+      echo "🔗 Connecting to MySQL database..."
+      echo "Service: $DB_SERVICE | User: $DB_USER"
+      docker-compose exec "$DB_SERVICE" mysql -u "$DB_USER" -p"$DB_PASSWORD"
 
   compose:adminer:
-    desc: Open Adminer in browser with MySQL credentials
+    desc: Open Adminer in browser with MySQL credentials from configuration
     silent: true
     cmds:
-    - echo "Opening Adminer at localhost:8080 with MySQL credentials"
+    - task: _activate_venv
     - |
+      DB_CONFIG=$(python scripts/docker/docker-compose-env.py configs/docker.yml --format env)
+      DB_USER=$(echo "$DB_CONFIG" | grep "^DB_USER=" | cut -d'=' -f2)
+      DB_PASSWORD=$(echo "$DB_CONFIG" | grep "^DB_PASSWORD=" | cut -d'=' -f2)
+      DB_DATABASE=$(echo "$DB_CONFIG" | grep "^DB_DATABASE=" | cut -d'=' -f2)
+      ADMINER_PORT=$(echo "$DB_CONFIG" | grep "^ADMINER_PORT=" | cut -d'=' -f2)
+      
+      echo "Opening Adminer at localhost:${ADMINER_PORT} with MySQL credentials from configs/docker.yml"
+      URL="http://localhost:${ADMINER_PORT}/?server=mysql&username=$DB_USER&password=$DB_PASSWORD&db=$DB_DATABASE"
       if command -v open &> /dev/null; then
-        open "http://localhost:8080/?server=mysql&username=root&password=123456&db=user"
+        open "$URL"
       elif command -v xdg-open &> /dev/null; then
-        xdg-open "http://localhost:8080/?server=mysql&username=root&password=123456&db=user"
+        xdg-open "$URL"
       else
-        echo "Please open http://localhost:8080/?server=mysql&username=root&password=123456&db=user in your browser"
+        echo "Please open $URL in your browser"
       fi
 
   compose:status:
@@ -225,3 +274,44 @@ tasks:
     silent: true
     cmds:
     - docker-compose ps
+
+  # Internal helper tasks
+  _activate_venv:
+    desc: Activate virtual environment (internal task)
+    internal: true
+    silent: true
+    cmds:
+    - |
+      if [ -d ".venv" ]; then
+        # Activate virtual environment
+        SHELL_NAME=$(basename "$SHELL")
+        case "$SHELL_NAME" in
+          "fish")
+            [ -f ".venv/bin/activate.fish" ] && source .venv/bin/activate.fish 2>/dev/null || source .venv/bin/activate
+            ;;
+          "csh" | "tcsh")
+            [ -f ".venv/bin/activate.csh" ] && source .venv/bin/activate.csh || source .venv/bin/activate
+            ;;
+          *)
+            source .venv/bin/activate
+            ;;
+        esac
+      fi
+
+  _show_service_urls:
+    desc: Show service URLs (internal task)
+    internal: true
+    silent: true
+    cmds:
+    - task: _activate_venv
+    - |
+      # Read configuration and display correct URLs
+      CONFIG=$(python scripts/docker/docker-compose-env.py configs/docker.yml --format env)
+      APP_PORT=$(echo "$CONFIG" | grep "^HTTP_PORT=" | cut -d'=' -f2)
+      ADMINER_PORT=$(echo "$CONFIG" | grep "^ADMINER_PORT=" | cut -d'=' -f2)
+      APP_HOST=$(echo "$CONFIG" | grep "^HTTP_HOST=" | cut -d'=' -f2)
+      DB_PORT=$(echo "$CONFIG" | grep "^DB_PORT=" | cut -d'=' -f2)
+      
+      echo "${APP_HOST^} available at http://localhost:${APP_PORT}"
+      echo "Adminer available at http://localhost:${ADMINER_PORT}"
+      echo "MySQL available at localhost:${DB_PORT}"

@@ -58,3 +58,36 @@ logs/
 
 # Python temps
 __pycache__
+
+# Test binary, built with `go test -c`
+*.test
+
+# Output of the go coverage tool, specifically when used with LiteIDE
+*.out
+
+# Dependency directories (remove the comment below to include it)
+# vendor/
+
+# IDE
+.vscode/
+.idea/
+
+# Build output
+build/
+dist/
+
+# Coverage reports
+reports/
+
+# Temporary files
+*.tmp
+*.temp
+
+# Environment files (auto-generated from configs/)
+.env
+.env.local
+.env.*.local
+
+# Auto-generated Docker files
+scripts/mysql-init.sql
+docker-compose.yml

@@ -61,6 +61,43 @@ func (m *MultiLogger) Panic(msg string, fields ...Field) {
 	}
 }
 
+// Formatted logging methods
+func (m *MultiLogger) Debugf(format string, args ...interface{}) {
+	for _, logger := range m.loggers {
+		logger.Debugf(format, args...)
+	}
+}
+
+func (m *MultiLogger) Infof(format string, args ...interface{}) {
+	for _, logger := range m.loggers {
+		logger.Infof(format, args...)
+	}
+}
+
+func (m *MultiLogger) Warnf(format string, args ...interface{}) {
+	for _, logger := range m.loggers {
+		logger.Warnf(format, args...)
+	}
+}
+
+func (m *MultiLogger) Errorf(format string, args ...interface{}) {
+	for _, logger := range m.loggers {
+		logger.Errorf(format, args...)
+	}
+}
+
+func (m *MultiLogger) Fatalf(format string, args ...interface{}) {
+	for _, logger := range m.loggers {
+		logger.Fatalf(format, args...)
+	}
+}
+
+func (m *MultiLogger) Panicf(format string, args ...interface{}) {
+	for _, logger := range m.loggers {
+		logger.Panicf(format, args...)
+	}
+}
+
 // WithFields creates a new multi-logger with additional context fields.
 func (m *MultiLogger) WithFields(fields ...Field) Logger {
 	newLoggers := make([]Logger, len(m.loggers))

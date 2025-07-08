@@ -3,32 +3,41 @@ services:
     image: mysql:8.0
     container_name: scaffold-mysql
     environment:
-      MYSQL_ROOT_PASSWORD: 123456
+      MYSQL_ROOT_PASSWORD: bXlfc2VjdXJlX3Bhc3N3b3JkXzEyMw==
       MYSQL_DATABASE: user
+      MYSQL_USER: scaffold
+      MYSQL_PASSWORD: bXlfc2VjdXJlX3Bhc3N3b3JkXzEyMw==
     ports:
-      - "3306:3306"
+    - 3306:3306
     volumes:
-      - mysql_data:/var/lib/mysql
-
+    - mysql_data:/var/lib/mysql
+    - ./db/mysql-init.sql:/docker-entrypoint-initdb.d/mysql-init.sql:ro
+    - ./scripts/docker/mysql-entrypoint.sh:/scripts/docker/mysql-entrypoint.sh:ro
+    entrypoint:
+    - ./scripts/docker/mysql-entrypoint.sh
+    - mysqld
   adminer:
     image: adminer:latest
     container_name: scaffold-adminer
     ports:
-      - "8080:8080"
+    - 8888:8080
     depends_on:
-      - mysql
-
-  scaffold:
+    - mysql
+    environment:
+      ADMINER_DEFAULT_SERVER: mysql
+      ADMINER_DESIGN: nette
+  app:
     build: .
     container_name: scaffold-app
     ports:
-      - "8000:8000"
+    - 12001:8000
     depends_on:
-      - mysql
+    - mysql
     volumes:
-      - ./configs:/app/configs
-      - ./logs:/app/logs
-    command: ["./server", "--config=configs/docker.yml"]
-
+    - ./configs:/app/configs
+    - ./logs:/app/logs
+    command:
+    - ./server
+    - --config=configs/docker.yml
 volumes:
-  mysql_data: 
+  mysql_data: null

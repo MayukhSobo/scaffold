@@ -2,6 +2,7 @@ package log
 
 import (
 	"context"
+	"fmt"
 	"path/filepath"
 	"time"
 
@@ -150,6 +151,31 @@ func (l *FileLogger) Fatal(msg string, fields ...Field) {
 func (l *FileLogger) Panic(msg string, fields ...Field) {
 	event := l.logger.Panic()
 	l.addFields(event, fields).Msg(msg)
+}
+
+// Formatted logging methods
+func (l *FileLogger) Debugf(format string, args ...interface{}) {
+	l.logger.Debug().Msg(fmt.Sprintf(format, args...))
+}
+
+func (l *FileLogger) Infof(format string, args ...interface{}) {
+	l.logger.Info().Msg(fmt.Sprintf(format, args...))
+}
+
+func (l *FileLogger) Warnf(format string, args ...interface{}) {
+	l.logger.Warn().Msg(fmt.Sprintf(format, args...))
+}
+
+func (l *FileLogger) Errorf(format string, args ...interface{}) {
+	l.logger.Error().Msg(fmt.Sprintf(format, args...))
+}
+
+func (l *FileLogger) Fatalf(format string, args ...interface{}) {
+	l.logger.Fatal().Msg(fmt.Sprintf(format, args...))
+}
+
+func (l *FileLogger) Panicf(format string, args ...interface{}) {
+	l.logger.Panic().Msg(fmt.Sprintf(format, args...))
 }
 
 // WithFields creates a new logger with additional context fields.

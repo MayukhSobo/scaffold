@@ -1,15 +1,47 @@
-env: local
+env: production
+
+# Application settings
+app:
+  name: "Scaffold v1.0.0"
+  version: "1.0.0"
+
 http:
   port: 8080
+
+# Server configuration
+server:
+  shutdown_timeout: "30s"
+  
+  # Middleware configuration
+  middleware:
+    recover: true
+    request_id: true
+    logger: false  # Using file logging instead
+    cors: true
+    logger_format: "[${time}] ${status} - ${method} ${path} - ${ip} - ${latency}\n"
+  
+  # CORS configuration
+  cors:
+    allow_origins: "https://yourdomain.com,https://api.yourdomain.com"
+    allow_methods: "GET,POST,PUT,DELETE,OPTIONS"
+    allow_headers: "Origin,Content-Type,Accept,Authorization,X-Requested-With"
+    allow_credentials: true
+    max_age: 7200
+
 security:
   api_sign:
     app_key: 123456
     app_security: 123456
   jwt:
     key: 1234
-data:
+
+db:
   mysql:
-    user: root:123456@tcp(127.0.0.1:3380)/user?charset=utf8mb4&parseTime=True&loc=Local
+    host: 127.0.0.1
+    port: 3380
+    user: scaffold
+    password: 123456
+    database: user
   redis:
     addr: 127.0.0.1:6350
     password: ""

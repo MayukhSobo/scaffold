@@ -2,6 +2,7 @@ package log
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"os"
 	"time"
@@ -68,26 +69,6 @@ func NewConsoleLoggerWithWriter(level Level, writer io.Writer, colorized bool) L
 	}
 }
 
-// parseLogLevel converts string to zerolog level.
-func parseLogLevel(level string) zerolog.Level {
-	switch level {
-	case "debug":
-		return zerolog.DebugLevel
-	case "info":
-		return zerolog.InfoLevel
-	case "warn":
-		return zerolog.WarnLevel
-	case "error":
-		return zerolog.ErrorLevel
-	case "fatal":
-		return zerolog.FatalLevel
-	case "panic":
-		return zerolog.PanicLevel
-	default:
-		return zerolog.InfoLevel
-	}
-}
-
 // addFields adds fields to the zerolog event.
 func (l *ConsoleLogger) addFields(event *zerolog.Event, fields []Field) *zerolog.Event {
 	// Add context data first
@@ -136,6 +117,31 @@ func (l *ConsoleLogger) Fatal(msg string, fields ...Field) {
 func (l *ConsoleLogger) Panic(msg string, fields ...Field) {
 	event := l.logger.Panic()
 	l.addFields(event, fields).Msg(msg)
+}
+
+// Formatted logging methods
+func (l *ConsoleLogger) Debugf(format string, args ...interface{}) {
+	l.logger.Debug().Msg(fmt.Sprintf(format, args...))
+}
+
+func (l *ConsoleLogger) Infof(format string, args ...interface{}) {
+	l.logger.Info().Msg(fmt.Sprintf(format, args...))
+}
+
+func (l *ConsoleLogger) Warnf(format string, args ...interface{}) {
+	l.logger.Warn().Msg(fmt.Sprintf(format, args...))
+}
+
+func (l *ConsoleLogger) Errorf(format string, args ...interface{}) {
+	l.logger.Error().Msg(fmt.Sprintf(format, args...))
+}
+
+func (l *ConsoleLogger) Fatalf(format string, args ...interface{}) {
+	l.logger.Fatal().Msg(fmt.Sprintf(format, args...))
+}
+
+func (l *ConsoleLogger) Panicf(format string, args ...interface{}) {
+	l.logger.Panic().Msg(fmt.Sprintf(format, args...))
 }
 
 // WithFields creates a new logger with additional context fields.

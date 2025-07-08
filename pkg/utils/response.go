@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/gofiber/fiber/v2"
 )
 
 // Response represents the standard API response structure
@@ -61,4 +62,51 @@ func HandleUnauthorized(ctx *gin.Context, message string) {
 // HandleForbidden sends a 403 Forbidden response
 func HandleForbidden(ctx *gin.Context, message string) {
 	HandleError(ctx, http.StatusForbidden, http.StatusForbidden, message, nil)
+}
+
+// Fiber-specific response utilities
+
+// HandleFiberSuccess sends a successful response for Fiber
+func HandleFiberSuccess(c *fiber.Ctx, data interface{}) error {
+	response := Response{
+		Code:    0,
+		Message: "success",
+		Data:    data,
+	}
+	return c.Status(fiber.StatusOK).JSON(response)
+}
+
+// HandleFiberError sends an error response for Fiber
+func HandleFiberError(c *fiber.Ctx, statusCode int, message string) error {
+	response := Response{
+		Code:    statusCode,
+		Message: message,
+		Data:    nil,
+	}
+	return c.Status(statusCode).JSON(response)
+}
+
+// HandleFiberBadRequest sends a 400 Bad Request response for Fiber
+func HandleFiberBadRequest(c *fiber.Ctx, message string) error {
+	return HandleFiberError(c, fiber.StatusBadRequest, message)
+}
+
+// HandleFiberInternalError sends a 500 Internal Server Error response for Fiber
+func HandleFiberInternalError(c *fiber.Ctx, message string) error {
+	return HandleFiberError(c, fiber.StatusInternalServerError, message)
+}
+
+// HandleFiberNotFound sends a 404 Not Found response for Fiber
+func HandleFiberNotFound(c *fiber.Ctx, message string) error {
+	return HandleFiberError(c, fiber.StatusNotFound, message)
+}
+
+// HandleFiberUnauthorized sends a 401 Unauthorized response for Fiber
+func HandleFiberUnauthorized(c *fiber.Ctx, message string) error {
+	return HandleFiberError(c, fiber.StatusUnauthorized, message)
+}
+
+// HandleFiberForbidden sends a 403 Forbidden response for Fiber
+func HandleFiberForbidden(c *fiber.Ctx, message string) error {
+	return HandleFiberError(c, fiber.StatusForbidden, message)
 }
