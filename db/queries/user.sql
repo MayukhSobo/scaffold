@@ -9,4 +9,8 @@ FROM users
 WHERE status = 'pending_verification';
 
 -- name: GetUsers :many
-SELECT * FROM users; 
+SELECT * FROM users;
+
+-- name: GetUser :one
+SELECT * FROM users
+WHERE id = ?; 

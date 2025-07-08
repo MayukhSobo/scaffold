@@ -11,6 +11,7 @@ import (
 type Querier interface {
 	GetAdminUsers(ctx context.Context) ([]User, error)
 	GetPendingVerificationUsers(ctx context.Context) ([]User, error)
+	GetUser(ctx context.Context, id uint64) (User, error)
 	GetUsers(ctx context.Context) ([]User, error)
 }
 

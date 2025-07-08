@@ -2,57 +2,62 @@ package service
 
 import (
 	"bytes"
+	"context"
+	"database/sql"
 	"testing"
 
 	"github.com/MayukhSobo/scaffold/internal/repository"
 	"github.com/MayukhSobo/scaffold/pkg/log"
-
+	_ "github.com/go-sql-driver/mysql"
 	"gorm.io/gorm"
 )
 
-func TestNewUserService(t *testing.T) {
-	// Create test dependencies
+// setupTests initializes dependencies for testing.
+func setupTests(t *testing.T) (UserService, *sql.DB) {
+	// Use a in-memory SQLite database for testing
+	db, err := sql.Open("mysql", "root:root@tcp(127.0.0.1:3306)/scaffold?parseTime=true")
+	if err != nil {
+		t.Fatalf("Failed to open database: %v", err)
+	}
+	t.Cleanup(func() { db.Close() })
+
 	var buf bytes.Buffer
 	logger := log.NewConsoleLoggerWithWriter(log.InfoLevel, &buf, false)
 
-	service := NewService(logger)
+	queries := repository.New(db)
+	userRepo := repository.NewUserRepository(queries)
+	baseService := NewService(logger)
+	userService := NewUserService(baseService, userRepo)
 
-	db := &gorm.DB{}
-	repo := repository.NewRepository(logger, db)
-	userRepo := repository.NewUserRepository(repo)
+	return userService, db
+}
 
-	userService := NewUserService(service, userRepo)
-
+func TestNewUserService(t *testing.T) {
+	userService, _ := setupTests(t)
 	if userService == nil {
 		t.Error("NewUserService() returned nil")
 	}
-
-	// Test that it implements UserService interface
-	var _ = userService
 }
 
 func TestUserServiceGetUserById(t *testing.T) {
-	// Create test dependencies
-	var buf bytes.Buffer
-	logger := log.NewConsoleLoggerWithWriter(log.InfoLevel, &buf, false)
+	userService, db := setupTests(t)
 
-	service := NewService(logger)
+	// Insert a test user
+	_, err := db.Exec("INSERT INTO users (id, username, email, password_hash, status, role) VALUES (?, ?, ?, ?, ?, ?)", 1, "testuser", "test@example.com", "hash", "active", "user")
+	if err != nil {
+		t.Fatalf("Failed to insert test user: %v", err)
+	}
 
-	db := &gorm.DB{}
-	repo := repository.NewRepository(logger, db)
-	userRepo := repository.NewUserRepository(repo)
-
-	userService := NewUserService(service, userRepo)
-
-	// Test GetUserById method
-	user, err := userService.GetUserById(123)
-
+	user, err := userService.GetUserById(context.Background(), 1)
 	if err != nil {
 		t.Errorf("GetUserById() returned error: %v", err)
 	}
 
-	if user == nil {
-		t.Error("GetUserById() returned nil user")
+	if user.ID != 1 {
+		t.Errorf("Expected user ID 1, got %d", user.ID)
+	}
+	if user.Username != "testuser" {
+		t.Errorf("Expected username 'testuser', got %s", user.Username)
 	}
 }
 

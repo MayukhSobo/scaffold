@@ -111,6 +111,40 @@ func (q *Queries) GetPendingVerificationUsers(ctx context.Context) ([]User, erro
 	return items, nil
 }
 
+const getUser = `-- name: GetUser :one
+SELECT id, username, email, password_hash, first_name, last_name, avatar_url, bio, phone_number, address_street, address_city, address_state, address_postal_code, address_country, status, role, email_verified_at, last_login_at, created_at, updated_at, deleted_at FROM users
+WHERE id = ?
+`
+
+func (q *Queries) GetUser(ctx context.Context, id uint64) (User, error) {
+	row := q.db.QueryRowContext(ctx, getUser, id)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Username,
+		&i.Email,
+		&i.PasswordHash,
+		&i.FirstName,
+		&i.LastName,
+		&i.AvatarUrl,
+		&i.Bio,
+		&i.PhoneNumber,
+		&i.AddressStreet,
+		&i.AddressCity,
+		&i.AddressState,
+		&i.AddressPostalCode,
+		&i.AddressCountry,
+		&i.Status,
+		&i.Role,
+		&i.EmailVerifiedAt,
+		&i.LastLoginAt,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.DeletedAt,
+	)
+	return i, err
+}
+
 const getUsers = `-- name: GetUsers :many
 SELECT id, username, email, password_hash, first_name, last_name, avatar_url, bio, phone_number, address_street, address_city, address_state, address_postal_code, address_country, status, role, email_verified_at, last_login_at, created_at, updated_at, deleted_at FROM users
 `

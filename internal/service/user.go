@@ -1,12 +1,13 @@
 package service
 
 import (
-	"github.com/MayukhSobo/scaffold/internal/model"
+	"context"
+
 	"github.com/MayukhSobo/scaffold/internal/repository"
 )
 
 type UserService interface {
-	GetUserById(id int64) (*model.User, error)
+	GetUserById(ctx context.Context, id int64) (repository.User, error)
 }
 
 type userService struct {
@@ -21,6 +22,6 @@ func NewUserService(service *Service, userRepository repository.UserRepository) 
 	}
 }
 
-func (s *userService) GetUserById(id int64) (*model.User, error) {
-	return s.userRepository.FirstById(id)
+func (s *userService) GetUserById(ctx context.Context, id int64) (repository.User, error) {
+	return s.userRepository.GetUser(ctx, uint64(id))
 }
