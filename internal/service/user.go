@@ -8,6 +8,8 @@ import (
 
 type UserService interface {
 	GetUserById(ctx context.Context, id int64) (users.User, error)
+	GetAdminUsers(ctx context.Context) ([]users.User, error)
+	GetPendingVerificationUsers(ctx context.Context) ([]users.User, error)
 }
 
 type userService struct {
@@ -24,4 +26,12 @@ func NewUserService(service *Service, userRepository users.Querier) UserService 
 
 func (s *userService) GetUserById(ctx context.Context, id int64) (users.User, error) {
 	return s.userRepository.GetUser(ctx, uint64(id))
+}
+
+func (s *userService) GetAdminUsers(ctx context.Context) ([]users.User, error) {
+	return s.userRepository.GetAdminUsers(ctx)
+}
+
+func (s *userService) GetPendingVerificationUsers(ctx context.Context) ([]users.User, error) {
+	return s.userRepository.GetPendingVerificationUsers(ctx)
 }

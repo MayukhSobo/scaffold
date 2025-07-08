@@ -5,7 +5,6 @@ import (
 	"github.com/spf13/viper"
 
 	"github.com/MayukhSobo/scaffold/internal/handler"
-	"github.com/MayukhSobo/scaffold/internal/repository/users"
 	"github.com/MayukhSobo/scaffold/internal/service"
 	"github.com/MayukhSobo/scaffold/pkg/log"
 )
@@ -16,7 +15,6 @@ type RouteConfig struct {
 	Config      *viper.Viper
 	Logger      log.Logger
 	UserService service.UserService
-	UserRepo    users.Querier
 }
 
 // RegisterRoutes sets up all application routes
@@ -31,5 +29,5 @@ func RegisterRoutes(rc *RouteConfig) {
 	v1 := api.Group("/v1")
 
 	// Register user routes
-	RegisterUserRoutes(v1, baseHandler, rc.UserService, rc.UserRepo)
+	RegisterUserRoutes(v1, baseHandler, rc.UserService)
 }

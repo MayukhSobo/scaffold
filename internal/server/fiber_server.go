@@ -8,7 +8,6 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/requestid"
 	"github.com/spf13/viper"
 
-	"github.com/MayukhSobo/scaffold/internal/repository/users"
 	"github.com/MayukhSobo/scaffold/internal/routes"
 	"github.com/MayukhSobo/scaffold/internal/service"
 	"github.com/MayukhSobo/scaffold/pkg/log"
@@ -127,14 +126,13 @@ func (s *FiberServer) setupRoutes() {
 }
 
 // SetupBusinessRoutes configures business logic routes with dependencies
-func (s *FiberServer) SetupBusinessRoutes(userService service.UserService, userRepo users.Querier) {
+func (s *FiberServer) SetupBusinessRoutes(userService service.UserService) {
 	// Create route config
 	routeConfig := &routes.RouteConfig{
 		App:         s.app,
 		Config:      s.config,
 		Logger:      s.logger,
 		UserService: userService,
-		UserRepo:    userRepo,
 	}
 
 	// Register business routes
