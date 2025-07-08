@@ -4,12 +4,14 @@ tasks:
   # Development tasks
   run:
     desc: Run the application with local config
+    deps: [ db:generate-sqlc ]
     silent: true
     cmds:
     - go run ./{{.CMD_DIR}} --config={{.CONFIG_DIR}}/local.yml
 
   run:prod:
     desc: Run the application with production config
+    deps: [ db:generate-sqlc ]
     silent: true
     cmds:
     - go run ./{{.CMD_DIR}} --config={{.CONFIG_DIR}}/prod.yml

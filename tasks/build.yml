@@ -4,6 +4,7 @@ tasks:
   # Build tasks
   debug:
     desc: Build development binary with debug symbols and race detection
+    deps: [ db:generate-sqlc ]
     silent: true
     cmds:
     - rm -rf {{.BUILD_DIR}}/debug
@@ -19,6 +20,7 @@ tasks:
 
   release:linux:
     desc: Build release binary for Linux
+    deps: [ db:generate-sqlc ]
     silent: true
     env:
       CGO_ENABLED: 0
@@ -38,6 +40,7 @@ tasks:
 
   release:darwin:
     desc: Build release binary for macOS
+    deps: [ db:generate-sqlc ]
     silent: true
     env:
       GOOS: darwin
@@ -56,6 +59,7 @@ tasks:
 
   release:windows:
     desc: Build release binary for Windows
+    deps: [ db:generate-sqlc ]
     silent: true
     env:
       CGO_ENABLED: 0

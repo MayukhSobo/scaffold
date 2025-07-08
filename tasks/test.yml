@@ -4,24 +4,28 @@ tasks:
   # Test tasks
   all:
     desc: Run all tests
+    deps: [ db:generate-sqlc ]
     silent: true
     cmds:
     - gotestsum --format=testname -- {{.TEST_DIRS}}
 
   unit:
     desc: Run unit tests only
+    deps: [ db:generate-sqlc ]
     silent: true
     cmds:
     - gotestsum --format=testname -- -short {{.TEST_DIRS}}
 
   integration:
     desc: Run integration tests only
+    deps: [ db:generate-sqlc ]
     silent: true
     cmds:
     - gotestsum --format=testname -- -run Integration {{.TEST_DIRS}}
 
   coverage:
     desc: Run tests with coverage report
+    deps: [ db:generate-sqlc ]
     silent: true
     cmds:
     - mkdir -p {{.COVERAGE_DIR}}
@@ -31,6 +35,7 @@ tasks:
 
   coverage:open:
     desc: Generate comprehensive coverage reports and open in browser
+    deps: [ db:generate-sqlc ]
     silent: true
     cmds:
     - mkdir -p {{.COVERAGE_DIR}}
@@ -58,12 +63,14 @@ tasks:
 
   race:
     desc: Run tests with race detection
+    deps: [ db:generate-sqlc ]
     silent: true
     cmds:
     - gotestsum --format=testname -- -race {{.TEST_DIRS}}
 
   benchmark:
     desc: Run benchmark tests
+    deps: [ db:generate-sqlc ]
     silent: true
     cmds:
     - gotestsum --format=testname -- -bench=. -benchmem {{.TEST_DIRS}} 
