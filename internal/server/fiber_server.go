@@ -1,9 +1,12 @@
 package server
 
 import (
+	"fmt"
+	"strings"
+	"time"
+
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
-	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/gofiber/fiber/v2/middleware/requestid"
 	"github.com/spf13/viper"
@@ -76,11 +79,9 @@ func (s *FiberServer) setupMiddleware() {
 		s.app.Use(requestid.New())
 	}
 
-	// Logger middleware
+	// Custom logger middleware using our structured logger
 	if s.config.GetBool("server.middleware.logger") {
-		s.app.Use(logger.New(logger.Config{
-			Format: s.config.GetString("server.middleware.logger_format"),
-		}))
+		s.app.Use(s.createLoggerMiddleware())
 	}
 
 	// CORS middleware
@@ -93,6 +94,98 @@ func (s *FiberServer) setupMiddleware() {
 			MaxAge:           s.config.GetInt("server.cors.max_age"),
 		}))
 	}
+}
+
+// createLoggerMiddleware creates a custom logger middleware using our structured logger
+func (s *FiberServer) createLoggerMiddleware() fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		start := time.Now()
+
+		// Process request
+		err := c.Next()
+
+		// Calculate latency
+		latency := time.Since(start)
+
+		// Build fields dynamically, only including meaningful values
+		fields := []log.Field{
+			log.String("method", c.Method()),
+			log.String("path", c.Path()),
+			log.Int("status", c.Response().StatusCode()),
+		}
+
+		// Only add query if it exists
+		if query := c.Request().URI().QueryArgs().String(); query != "" {
+			fields = append(fields, log.String("query", query))
+		}
+
+		// Only add IP if it's not localhost
+		if ip := c.IP(); ip != "127.0.0.1" && ip != "::1" {
+			fields = append(fields, log.String("ip", ip))
+		}
+
+		// Only add user agent if it's not a common development tool
+		if userAgent := c.Get("User-Agent"); userAgent != "" &&
+			!strings.Contains(strings.ToLower(userAgent), "insomnia") &&
+			!strings.Contains(strings.ToLower(userAgent), "postman") &&
+			!strings.Contains(strings.ToLower(userAgent), "curl") {
+			fields = append(fields, log.String("user_agent", userAgent))
+		}
+
+		// Human-readable latency
+		fields = append(fields, log.String("latency", s.formatLatency(latency)))
+
+		// Human-readable bytes sent
+		fields = append(fields, log.String("bytes_sent", s.formatBytes(len(c.Response().Body()))))
+
+		// Add request ID if available
+		if requestID := c.Get("X-Request-ID"); requestID != "" {
+			fields = append(fields, log.String("request_id", requestID))
+		} else if rid := c.Locals("requestid"); rid != nil {
+			fields = append(fields, log.String("request_id", rid.(string)))
+		}
+
+		// Log based on status code
+		status := c.Response().StatusCode()
+		switch {
+		case status >= 500:
+			s.logger.Error("HTTP Request", fields...)
+		case status >= 400:
+			s.logger.Warn("HTTP Request", fields...)
+		default:
+			s.logger.Info("HTTP Request", fields...)
+		}
+
+		return err
+	}
+}
+
+// formatLatency formats duration in a human-readable way
+func (s *FiberServer) formatLatency(d time.Duration) string {
+	if d < time.Microsecond {
+		return d.String()
+	}
+	if d < time.Millisecond {
+		return fmt.Sprintf("%.0fµs", float64(d.Nanoseconds())/1000)
+	}
+	if d < time.Second {
+		return fmt.Sprintf("%.2fms", float64(d.Nanoseconds())/1000000)
+	}
+	return fmt.Sprintf("%.2fs", d.Seconds())
+}
+
+// formatBytes formats byte count in a human-readable way
+func (s *FiberServer) formatBytes(bytes int) string {
+	if bytes < 1024 {
+		return fmt.Sprintf("%dB", bytes)
+	}
+	if bytes < 1024*1024 {
+		return fmt.Sprintf("%.1fKB", float64(bytes)/1024)
+	}
+	if bytes < 1024*1024*1024 {
+		return fmt.Sprintf("%.1fMB", float64(bytes)/(1024*1024))
+	}
+	return fmt.Sprintf("%.1fGB", float64(bytes)/(1024*1024*1024))
 }
 
 // setupRoutes configures basic routes
