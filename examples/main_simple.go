@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/MayukhSobo/scaffold/internal/server"
 	"github.com/MayukhSobo/scaffold/pkg/config"
@@ -10,6 +11,12 @@ import (
 )
 
 func main() {
+	// Check if we should run config examples instead of the server
+	if len(os.Args) > 1 && os.Args[1] == "config-examples" {
+		configEnvironmentsExample()
+		return
+	}
+
 	// Display startup banner
 	fmt.Println("Starting Scaffold API Server...")
 

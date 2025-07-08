@@ -10,6 +10,7 @@ import (
 
 	"github.com/MayukhSobo/scaffold/internal/routes"
 	"github.com/MayukhSobo/scaffold/internal/service"
+	"github.com/MayukhSobo/scaffold/pkg/container"
 	"github.com/MayukhSobo/scaffold/pkg/log"
 )
 
@@ -137,6 +138,19 @@ func (s *FiberServer) SetupBusinessRoutes(userService service.UserService) {
 
 	// Register business routes
 	routes.RegisterRoutes(routeConfig)
+}
+
+// SetupBusinessRoutesWithContainer configures business logic routes using the container pattern
+// This is the new, scalable approach that handles multiple services and repositories
+func (s *FiberServer) SetupBusinessRoutesWithContainer(container *container.TypedContainer) {
+	// Create route config using container
+	routeConfig := &routes.ContainerRouteConfig{
+		App:       s.app,
+		Container: container,
+	}
+
+	// Register business routes using container pattern
+	routes.RegisterRoutesWithContainer(routeConfig)
 }
 
 // GetApp returns the underlying Fiber app

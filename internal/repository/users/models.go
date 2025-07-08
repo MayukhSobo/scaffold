@@ -98,25 +98,25 @@ func (ns NullUsersStatus) Value() (driver.Value, error) {
 }
 
 type User struct {
-	ID                uint64         `json:"id"`
-	Username          string         `json:"username"`
-	Email             string         `json:"email"`
-	PasswordHash      string         `json:"password_hash"`
-	FirstName         sql.NullString `json:"first_name"`
-	LastName          sql.NullString `json:"last_name"`
-	AvatarUrl         sql.NullString `json:"avatar_url"`
-	Bio               sql.NullString `json:"bio"`
-	PhoneNumber       sql.NullString `json:"phone_number"`
-	AddressStreet     sql.NullString `json:"address_street"`
-	AddressCity       sql.NullString `json:"address_city"`
-	AddressState      sql.NullString `json:"address_state"`
-	AddressPostalCode sql.NullString `json:"address_postal_code"`
-	AddressCountry    sql.NullString `json:"address_country"`
-	Status            UsersStatus    `json:"status"`
-	Role              UsersRole      `json:"role"`
-	EmailVerifiedAt   sql.NullTime   `json:"email_verified_at"`
-	LastLoginAt       sql.NullTime   `json:"last_login_at"`
-	CreatedAt         sql.NullTime   `json:"created_at"`
-	UpdatedAt         sql.NullTime   `json:"updated_at"`
-	DeletedAt         sql.NullTime   `json:"deleted_at"`
+	ID                uint64       `json:"id"`
+	Username          string       `json:"username"`
+	Email             string       `json:"email"`
+	PasswordHash      string       `json:"password_hash" redact:"true"`
+	FirstName         string       `json:"first_name"`
+	LastName          string       `json:"last_name"`
+	AvatarUrl         string       `json:"avatar_url"`
+	Bio               string       `json:"bio"`
+	PhoneNumber       string       `json:"phone_number"`
+	AddressStreet     string       `json:"address_street"`
+	AddressCity       string       `json:"address_city"`
+	AddressState      string       `json:"address_state"`
+	AddressPostalCode string       `json:"address_postal_code"`
+	AddressCountry    string       `json:"address_country"`
+	Status            UsersStatus  `json:"status"`
+	Role              UsersRole    `json:"role"`
+	EmailVerifiedAt   sql.NullTime `json:"email_verified_at"`
+	LastLoginAt       sql.NullTime `json:"last_login_at"`
+	CreatedAt         sql.NullTime `json:"created_at"`
+	UpdatedAt         sql.NullTime `json:"updated_at"`
+	DeletedAt         sql.NullTime `json:"deleted_at"`
 }

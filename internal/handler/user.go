@@ -6,8 +6,8 @@ import (
 	"github.com/gofiber/fiber/v2"
 
 	"github.com/MayukhSobo/scaffold/internal/service"
+	"github.com/MayukhSobo/scaffold/pkg/http"
 	"github.com/MayukhSobo/scaffold/pkg/log"
-	"github.com/MayukhSobo/scaffold/pkg/utils"
 )
 
 func NewUserHandler(handler *Handler, userService service.UserService) *UserHandler {
@@ -30,13 +30,16 @@ func (h *UserHandler) GetAdminUsers(c *fiber.Ctx) error {
 	adminUsers, err := h.userService.GetAdminUsers(ctx)
 	if err != nil {
 		h.GetLogger().Error("Failed to retrieve admin users", log.Error(err))
-		return utils.HandleFiberError(c, fiber.StatusInternalServerError, "Failed to retrieve admin users")
+		return http.HandleFiberError(c, fiber.StatusInternalServerError, "Failed to retrieve admin users")
 	}
 
+	// Convert to response models (excludes password_hash)
+	userResponses := ToUserResponses(adminUsers)
+
 	h.GetLogger().Info("Retrieved admin users", log.Int("count", len(adminUsers)))
-	return utils.HandleFiberSuccess(c, fiber.Map{
-		"users": adminUsers,
-		"count": len(adminUsers),
+	return http.HandleFiberSuccess(c, fiber.Map{
+		"users": userResponses,
+		"count": len(userResponses),
 	})
 }
 
@@ -48,12 +51,15 @@ func (h *UserHandler) GetPendingVerificationUsers(c *fiber.Ctx) error {
 	pendingUsers, err := h.userService.GetPendingVerificationUsers(ctx)
 	if err != nil {
 		h.GetLogger().Error("Failed to retrieve pending verification users", log.Error(err))
-		return utils.HandleFiberError(c, fiber.StatusInternalServerError, "Failed to retrieve pending verification users")
+		return http.HandleFiberError(c, fiber.StatusInternalServerError, "Failed to retrieve pending verification users")
 	}
 
+	// Convert to response models (excludes password_hash)
+	userResponses := ToUserResponses(pendingUsers)
+
 	h.GetLogger().Info("Retrieved pending verification users", log.Int("count", len(pendingUsers)))
-	return utils.HandleFiberSuccess(c, fiber.Map{
-		"users": pendingUsers,
-		"count": len(pendingUsers),
+	return http.HandleFiberSuccess(c, fiber.Map{
+		"users": userResponses,
+		"count": len(userResponses),
 	})
 }

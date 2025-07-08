@@ -16,13 +16,38 @@ After connecting the routes to the server, you now have these endpoints availabl
 ## How to Test
 
 ### 1. Start the Server
+
+#### With Default Configuration (local.yml)
 ```bash
 # From project root
 go run cmd/server/main.go
+# or explicitly:
+go run cmd/server/main.go --config configs/local.yml
+```
+
+#### With Different Environments
+```bash
+# Docker environment (port 12001)
+go run cmd/server/main.go --config configs/docker.yml
+go run cmd/server/main.go --config @/docker.yml
+
+# Production environment (port 8080)  
+go run cmd/server/main.go --config configs/prod.yml
+go run cmd/server/main.go --config @/prod.yml
+
+# Validate configuration
+go run cmd/server/main.go --config configs/local.yml --validate-config
+```
+
+#### View Configuration Examples
+```bash
+# See how different environments load configs
+go run examples/*.go config-examples
 ```
 
 You should see logs showing:
 ```
+Loaded config file: configs/local.yml
 Starting application...
 Initializing dependencies...
 Database initialized
@@ -36,6 +61,12 @@ Server starting on port 8000
 ### 2. Test the Routes
 
 #### Test Admin Users Route
+
+**Note**: Port varies by environment:
+- Local: `http://localhost:8000` (configs/local.yml)
+- Docker: `http://localhost:12001` (configs/docker.yml)  
+- Production: `http://localhost:8080` (configs/prod.yml)
+
 ```bash
 curl http://localhost:8000/api/v1/users/admin
 ```

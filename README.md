@@ -108,7 +108,68 @@ scaffold/
 
 ## 🏛️ Architecture
 
-This project follows a classic layered architecture pattern to ensure separation of concerns, making it modular, scalable, and easy to maintain.
+graph TB
+    subgraph "Layered Architecture (Unchanged)"
+        subgraph "Controller Layer"
+            C1[UserHandler]
+            C2[ProductHandler]
+            C3[OrderHandler]
+        end
+        
+        subgraph "Service Layer"
+            S1[UserService]
+            S2[ProductService]
+            S3[OrderService]
+        end
+        
+        subgraph "Repository Layer"
+            R1[UserRepository]
+            R2[ProductRepository]
+            R3[OrderRepository]
+        end
+        
+        subgraph "Database Layer"
+            DB[(Database)]
+        end
+    end
+    
+    subgraph "Container (Dependency Manager)"
+        CONTAINER[TypedContainer<br/>- Stores all dependencies<br/>- Manages creation<br/>- Provides access]
+    end
+    
+    %% Architecture relationships (unchanged)
+    C1 --> S1
+    C2 --> S2
+    C3 --> S3
+    S1 --> R1
+    S2 --> R2
+    S3 --> R3
+    R1 --> DB
+    R2 --> DB
+    R3 --> DB
+    
+    %% Container provides dependencies
+    CONTAINER -.->|Provides| C1
+    CONTAINER -.->|Provides| C2
+    CONTAINER -.->|Provides| C3
+    CONTAINER -.->|Creates & Stores| S1
+    CONTAINER -.->|Creates & Stores| S2
+    CONTAINER -.->|Creates & Stores| S3
+    CONTAINER -.->|Creates & Stores| R1
+    CONTAINER -.->|Creates & Stores| R2
+    CONTAINER -.->|Creates & Stores| R3
+    
+    classDef controller fill:#fff3e0
+    classDef service fill:#f3e5f5
+    classDef repository fill:#e8f5e8
+    classDef database fill:#e3f2fd
+    classDef container fill:#ffebee
+    
+    class C1,C2,C3 controller
+    class S1,S2,S3 service
+    class R1,R2,R3 repository
+    class DB database
+    class CONTAINER container
 
 ### Layer Descriptions
 

@@ -4,28 +4,28 @@ tasks:
   # Test tasks
   all:
     desc: Run all tests
-    deps: [ db:generate-sqlc ]
+    deps: [ ":db:generate-sqlc" ]
     silent: true
     cmds:
     - gotestsum --format=testname -- {{.TEST_DIRS}}
 
   unit:
     desc: Run unit tests only
-    deps: [ db:generate-sqlc ]
+    deps: [ ":db:generate-sqlc" ]
     silent: true
     cmds:
     - gotestsum --format=testname -- -short {{.TEST_DIRS}}
 
   integration:
     desc: Run integration tests only
-    deps: [ db:generate-sqlc ]
+    deps: [ ":db:generate-sqlc" ]
     silent: true
     cmds:
     - gotestsum --format=testname -- -run Integration {{.TEST_DIRS}}
 
   coverage:
     desc: Run tests with coverage report
-    deps: [ db:generate-sqlc ]
+    deps: [ ":db:generate-sqlc" ]
     silent: true
     cmds:
     - mkdir -p {{.COVERAGE_DIR}}
@@ -35,7 +35,7 @@ tasks:
 
   coverage:open:
     desc: Generate comprehensive coverage reports and open in browser
-    deps: [ db:generate-sqlc ]
+    deps: [ ":db:generate-sqlc" ]
     silent: true
     cmds:
     - mkdir -p {{.COVERAGE_DIR}}
@@ -63,14 +63,36 @@ tasks:
 
   race:
     desc: Run tests with race detection
-    deps: [ db:generate-sqlc ]
+    deps: [ ":db:generate-sqlc" ]
     silent: true
     cmds:
     - gotestsum --format=testname -- -race {{.TEST_DIRS}}
 
   benchmark:
     desc: Run benchmark tests
-    deps: [ db:generate-sqlc ]
+    deps: [ ":db:generate-sqlc" ]
     silent: true
     cmds:
-    - gotestsum --format=testname -- -bench=. -benchmem {{.TEST_DIRS}} 
+    - gotestsum --format=testname -- -bench=. -benchmem {{.TEST_DIRS}}
+
+  # Database connection tests (no dependency on sqlc generation since they're unit tests)
+  db:local:
+    desc: Run database connection tests for local environment
+    silent: true
+    cmds:
+    - echo "🧪 Running database connection tests for local environment..."
+    - gotestsum --format=testname -- -v ./pkg/db -run "TestWithActualLocalConfigFile|TestParseConfigLocalEnvironment|TestBuildDSNLocalEnvironment|TestNewConnectionLocalInvalidConfig"
+
+  db:docker:
+    desc: Run database connection tests for Docker environment
+    silent: true
+    cmds:
+    - echo "🧪 Running database connection tests for Docker environment..."
+    - gotestsum --format=testname -- -v ./pkg/db -run "TestWithActualDockerConfigFile|TestWithActualDockerConfigFileConnection|TestParseConfigDockerEnvironment|TestBuildDSNDockerEnvironment|TestNewConnectionDockerInvalidConfig|TestNewConnectionDockerRealConfig"
+
+  db:all:
+    desc: Run all database connection tests (local, docker, and generic)
+    silent: true
+    cmds:
+    - echo "🧪 Running all database connection tests..."
+    - gotestsum --format=testname -- -v ./pkg/db 
