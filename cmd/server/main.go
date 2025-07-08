@@ -83,7 +83,7 @@ func main() {
 	logger.Info("Starting server with business routes...")
 	server.RunWithCustomSetup(conf, logger, func(s *server.FiberServer) {
 		// Setup business routes with dependencies
-		s.SetupBusinessRoutes(userService)
+		s.SetupBusinessRoutes(userService, userQueries)
 		logger.Info("Business routes registered successfully")
 	})
 }

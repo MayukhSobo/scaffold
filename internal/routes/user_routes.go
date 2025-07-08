@@ -4,13 +4,14 @@ import (
 	"github.com/gofiber/fiber/v2"
 
 	"github.com/MayukhSobo/scaffold/internal/handler"
+	"github.com/MayukhSobo/scaffold/internal/repository/users"
 	"github.com/MayukhSobo/scaffold/internal/service"
 )
 
 // RegisterUserRoutes sets up the user-related routes requested by the user
-func RegisterUserRoutes(router fiber.Router, baseHandler *handler.Handler, userService service.UserService) {
+func RegisterUserRoutes(router fiber.Router, baseHandler *handler.Handler, userService service.UserService, userRepo users.Querier) {
 	// Create user handler
-	userHandler := handler.NewUserHandler(baseHandler, userService)
+	userHandler := handler.NewUserHandler(baseHandler, userService, userRepo)
 
 	// User routes group
 	users := router.Group("/users")
