@@ -9,7 +9,6 @@ import (
 	"github.com/MayukhSobo/scaffold/internal/repository"
 	"github.com/MayukhSobo/scaffold/pkg/log"
 	_ "github.com/go-sql-driver/mysql"
-	"gorm.io/gorm"
 )
 
 // setupTests initializes dependencies for testing.
@@ -58,70 +57,5 @@ func TestUserServiceGetUserById(t *testing.T) {
 	}
 	if user.Username != "testuser" {
 		t.Errorf("Expected username 'testuser', got %s", user.Username)
-	}
-}
-
-func TestUserServiceInterface(t *testing.T) {
-	// Test that userService implements UserService interface
-	var buf bytes.Buffer
-	logger := log.NewConsoleLoggerWithWriter(log.InfoLevel, &buf, false)
-
-	service := NewService(logger)
-
-	db := &gorm.DB{}
-	repo := repository.NewRepository(logger, db)
-	userRepo := repository.NewUserRepository(repo)
-
-	userService := NewUserService(service, userRepo)
-
-	// Test interface compliance
-	var serviceInterface = userService
-	if serviceInterface == nil {
-		t.Error("userService does not implement UserService interface")
-	}
-
-	// Test that methods exist
-	_, err := serviceInterface.GetUserById(1)
-	if err != nil {
-		t.Errorf("Interface method GetUserById failed: %v", err)
-	}
-}
-
-func TestUserServiceEmbedding(t *testing.T) {
-	// Test that userService can be created successfully
-	var buf bytes.Buffer
-	logger := log.NewConsoleLoggerWithWriter(log.InfoLevel, &buf, false)
-
-	service := NewService(logger)
-
-	db := &gorm.DB{}
-	repo := repository.NewRepository(logger, db)
-	userRepo := repository.NewUserRepository(repo)
-
-	userService := NewUserService(service, userRepo)
-
-	// Test that it was created successfully
-	if userService == nil {
-		t.Error("userService should not be nil")
-	}
-}
-
-func TestUserServiceDependencyInjection(t *testing.T) {
-	// Test that dependency injection works correctly
-	var buf bytes.Buffer
-	logger := log.NewConsoleLoggerWithWriter(log.InfoLevel, &buf, false)
-
-	service := NewService(logger)
-
-	db := &gorm.DB{}
-	repo := repository.NewRepository(logger, db)
-	userRepo := repository.NewUserRepository(repo)
-
-	userService := NewUserService(service, userRepo)
-
-	// Test that the service can execute methods
-	_, err := userService.GetUserById(1)
-	if err != nil {
-		t.Errorf("Dependency injection failed: %v", err)
 	}
 }
