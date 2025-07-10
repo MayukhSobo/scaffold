@@ -91,3 +91,6 @@ reports/
 # Auto-generated Docker files
 scripts/mysql-init.sql
 docker-compose.yml
+
+# Repository directory
+internal/repository/
