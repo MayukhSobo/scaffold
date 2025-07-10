@@ -2,7 +2,9 @@ package db
 
 import (
 	"database/sql"
+	"encoding/base64"
 	"fmt"
+	"regexp"
 	"time"
 
 	_ "github.com/go-sql-driver/mysql"
@@ -70,6 +72,8 @@ func parseConfig(conf *viper.Viper) (*Config, error) {
 		if err := conf.UnmarshalKey("db.mysql", config); err != nil {
 			return nil, fmt.Errorf("failed to unmarshal db.mysql config: %w", err)
 		}
+		// Decode base64 password if needed
+		config.Password = decodeIfBase64(config.Password)
 	}
 
 	// Override with individual keys if they exist
@@ -83,7 +87,7 @@ func parseConfig(conf *viper.Viper) (*Config, error) {
 		config.User = conf.GetString("db.mysql.user")
 	}
 	if conf.IsSet("db.mysql.password") {
-		config.Password = conf.GetString("db.mysql.password")
+		config.Password = decodeIfBase64(conf.GetString("db.mysql.password"))
 	}
 	if conf.IsSet("db.mysql.database") {
 		config.Name = conf.GetString("db.mysql.database")
@@ -94,6 +98,8 @@ func parseConfig(conf *viper.Viper) (*Config, error) {
 		if err := conf.UnmarshalKey("database", config); err != nil {
 			return nil, fmt.Errorf("failed to unmarshal database config: %w", err)
 		}
+		// Decode base64 password if needed
+		config.Password = decodeIfBase64(config.Password)
 	}
 
 	// Legacy database config overrides
@@ -107,7 +113,7 @@ func parseConfig(conf *viper.Viper) (*Config, error) {
 		config.User = conf.GetString("database.user")
 	}
 	if conf.IsSet("database.password") {
-		config.Password = conf.GetString("database.password")
+		config.Password = decodeIfBase64(conf.GetString("database.password"))
 	}
 	if conf.IsSet("database.name") {
 		config.Name = conf.GetString("database.name")
@@ -118,7 +124,7 @@ func parseConfig(conf *viper.Viper) (*Config, error) {
 
 // buildDSN constructs the MySQL DSN string
 func buildDSN(config *Config) string {
-	return fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?parseTime=true&charset=utf8mb4&collation=utf8mb4_unicode_ci",
+	return fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?parseTime=true&charset=utf8mb4&collation=utf8mb4_unicode_ci&tls=skip-verify&allowNativePasswords=true",
 		config.User,
 		config.Password,
 		config.Host,
@@ -183,4 +189,25 @@ func MustConnect(conf *viper.Viper, logger log.Logger) *sql.DB {
 		panic(err) // This line won't be reached due to Fatal, but added for clarity
 	}
 	return db
+}
+
+// decodeIfBase64 decodes the password if it looks like base64 encoded data
+func decodeIfBase64(value string) string {
+	if value == "" {
+		return value
+	}
+
+	// Simple check if it looks like base64 (alphanumeric + / + =)
+	base64Pattern := regexp.MustCompile(`^[A-Za-z0-9+/]+=*$`)
+	if !base64Pattern.MatchString(value) || len(value) <= 8 {
+		return value
+	}
+
+	// Try to decode, if it fails, use original value
+	decoded, err := base64.StdEncoding.DecodeString(value)
+	if err != nil {
+		return value
+	}
+
+	return string(decoded)
 }
