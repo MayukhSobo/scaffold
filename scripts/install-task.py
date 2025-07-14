@@ -44,6 +44,16 @@ class TaskInstaller:
         self.github_api_url = "https://api.github.com/repos/go-task/task/releases/latest"
         self.github_release_url = "https://github.com/go-task/task/releases/latest"
         
+    def _need_sudo(self) -> bool:
+        """Check if we need to use sudo for installation"""
+        # If running as root (uid 0), no need for sudo
+        if os.getuid() == 0:
+            return False
+        # If sudo is not available, can't use it
+        if not shutil.which('sudo'):
+            return False
+        return True
+        
     def _log_info(self, message: str):
         """Log info message"""
         if HAS_RICH:
@@ -241,16 +251,29 @@ class TaskInstaller:
             
             install_path = install_dir / 'task'
             
+            # Determine if we need sudo
+            use_sudo = self._need_sudo()
+            
             if HAS_RICH:
                 with console.status("Installing Task..."):
+                    if use_sudo:
+                        success, output = self._run_command(['sudo', 'cp', str(task_binary), str(install_path)])
+                        if success:
+                            self._run_command(['sudo', 'chmod', '+x', str(install_path)])
+                    else:
+                        success, output = self._run_command(['cp', str(task_binary), str(install_path)])
+                        if success:
+                            self._run_command(['chmod', '+x', str(install_path)])
+            else:
+                print("Installing Task...")
+                if use_sudo:
                     success, output = self._run_command(['sudo', 'cp', str(task_binary), str(install_path)])
                     if success:
                         self._run_command(['sudo', 'chmod', '+x', str(install_path)])
-            else:
-                print("Installing Task...")
-                success, output = self._run_command(['sudo', 'cp', str(task_binary), str(install_path)])
-                if success:
-                    self._run_command(['sudo', 'chmod', '+x', str(install_path)])
+                else:
+                    success, output = self._run_command(['cp', str(task_binary), str(install_path)])
+                    if success:
+                        self._run_command(['chmod', '+x', str(install_path)])
             
             # Cleanup
             shutil.rmtree(temp_dir, ignore_errors=True)
@@ -286,13 +309,20 @@ class TaskInstaller:
         
         elif system == 'linux':
             # Linux - try different package managers
+            use_sudo = self._need_sudo()
             if shutil.which('snap'):
                 if HAS_RICH:
                     with console.status("Installing Task via snap..."):
-                        success, output = self._run_command(['sudo', 'snap', 'install', 'task', '--classic'])
+                        if use_sudo:
+                            success, output = self._run_command(['sudo', 'snap', 'install', 'task', '--classic'])
+                        else:
+                            success, output = self._run_command(['snap', 'install', 'task', '--classic'])
                 else:
                     print("Installing Task via snap...")
-                    success, output = self._run_command(['sudo', 'snap', 'install', 'task', '--classic'])
+                    if use_sudo:
+                        success, output = self._run_command(['sudo', 'snap', 'install', 'task', '--classic'])
+                    else:
+                        success, output = self._run_command(['snap', 'install', 'task', '--classic'])
                 
                 if success:
                     self._log_info("Task installed successfully via snap")
@@ -305,11 +335,18 @@ class TaskInstaller:
                 if HAS_RICH:
                     with console.status("Installing Task via apt..."):
                         # Add Task repository
-                        commands = [
-                            ['sudo', 'sh', '-c', 'echo "deb [trusted=yes] https://repo.goreleaser.com/apt/ /" > /etc/apt/sources.list.d/goreleaser.list'],
-                            ['sudo', 'apt', 'update'],
-                            ['sudo', 'apt', 'install', '-y', 'task']
-                        ]
+                        if use_sudo:
+                            commands = [
+                                ['sudo', 'sh', '-c', 'echo "deb [trusted=yes] https://repo.goreleaser.com/apt/ /" > /etc/apt/sources.list.d/goreleaser.list'],
+                                ['sudo', 'apt', 'update'],
+                                ['sudo', 'apt', 'install', '-y', 'task']
+                            ]
+                        else:
+                            commands = [
+                                ['sh', '-c', 'echo "deb [trusted=yes] https://repo.goreleaser.com/apt/ /" > /etc/apt/sources.list.d/goreleaser.list'],
+                                ['apt', 'update'],
+                                ['apt', 'install', '-y', 'task']
+                            ]
                         
                         for cmd in commands:
                             success, output = self._run_command(cmd)
@@ -322,11 +359,18 @@ class TaskInstaller:
                 else:
                     print("Installing Task via apt...")
                     # Similar implementation without rich
-                    commands = [
-                        ['sudo', 'sh', '-c', 'echo "deb [trusted=yes] https://repo.goreleaser.com/apt/ /" > /etc/apt/sources.list.d/goreleaser.list'],
-                        ['sudo', 'apt', 'update'],
-                        ['sudo', 'apt', 'install', '-y', 'task']
-                    ]
+                    if use_sudo:
+                        commands = [
+                            ['sudo', 'sh', '-c', 'echo "deb [trusted=yes] https://repo.goreleaser.com/apt/ /" > /etc/apt/sources.list.d/goreleaser.list'],
+                            ['sudo', 'apt', 'update'],
+                            ['sudo', 'apt', 'install', '-y', 'task']
+                        ]
+                    else:
+                        commands = [
+                            ['sh', '-c', 'echo "deb [trusted=yes] https://repo.goreleaser.com/apt/ /" > /etc/apt/sources.list.d/goreleaser.list'],
+                            ['apt', 'update'],
+                            ['apt', 'install', '-y', 'task']
+                        ]
                     
                     for cmd in commands:
                         success, output = self._run_command(cmd)
