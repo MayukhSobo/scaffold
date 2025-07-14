@@ -8,34 +8,10 @@ tasks:
     cmds:
     - |
       if [ ! -d ".venv" ]; then
-        echo "❌ Virtual environment not found. Run 'task shared:setup:python' first."
+        echo "❌ Virtual environment not found. Run 'task venv:create' first."
         exit 1
-      fi
-      
-      # Activate virtual environment
-      SHELL_NAME=$(basename "$SHELL")
-      case "$SHELL_NAME" in
-        "fish")
-          [ -f ".venv/bin/activate.fish" ] && source .venv/bin/activate.fish || source .venv/bin/activate
-          ;;
-        "csh" | "tcsh")
-          [ -f ".venv/bin/activate.csh" ] && source .venv/bin/activate.csh || source .venv/bin/activate
-          ;;
-        *)
-          source .venv/bin/activate
-          ;;
-      esac
-
-  # Setup tasks - used by all other tasks
-  setup:
-    desc: Setup development environment (install dependencies and tools)
-    silent: true
-    deps: [":deps:install", setup:python]
-    cmds:
-    - echo "✅ Development environment setup completed"
-    - echo "🎯 Go dependencies, development tools, and Python environment are ready!"
-
-  setup:python:
+      fi 
+  venv:create:
     desc: Setup Python virtual environment with dependencies
     silent: true
     cmds:
@@ -94,9 +70,8 @@ tasks:
       echo "🎯 Python virtual environment setup complete!"
       echo ""
       echo "To activate the environment, run:"
-    - task: shared:setup:python:activate
-
-  setup:python:show-activation:
+    - task: venv:activate
+  venv:show-activation:
     desc: Show shell-specific activation instructions (internal helper)
     silent: true
     internal: true
@@ -141,8 +116,7 @@ tasks:
       echo ""
       echo "To deactivate when done:"
       echo "  deactivate"
-
-  setup:python:activate:
+  venv:activate:
     desc: Show shell-specific Python virtual environment activation instructions
     silent: true
     cmds:
@@ -156,7 +130,7 @@ tasks:
       echo "🐍 Python virtual environment found!"
       echo "Detected shell: $SHELL_NAME"
       echo ""
-    - task: setup:python:show-activation
+    - task: venv:show-activation
 
 
 
@@ -249,11 +223,8 @@ tasks:
       echo "================================"
       echo ""
       echo "📋 SETUP & ENVIRONMENT"
-      echo "  shared:setup              - Setup complete development environment"
-      echo "  shared:setup:tools        - Install specific tools (pass tool names as args)"
-      echo "  shared:setup:go           - Install Go dependencies only"
-      echo "  shared:setup:python       - Setup Python virtual environment"
-      echo "  shared:setup:python:activate - Show Python venv activation instructions"
+      echo "  shared:venv:create        - Setup Python virtual environment"
+      echo "  shared:venv:activate      - Show Python venv activation instructions"
       echo "  shared:validate:go        - Validate Go environment"
       echo "  shared:validate:docker    - Validate Docker environment"
       echo "  shared:info:environment   - Show environment information"
@@ -350,9 +321,9 @@ tasks:
       echo "  ci:status                 - Show CI status dashboard"
       echo ""
       echo "💡 EXAMPLES"
-      echo "  task shared:setup                         # Setup everything"
-      echo "  task shared:setup:tools -- golangci-lint gotestsum  # Install specific tools"
+      echo "  task shared:venv:create                   # Setup Python virtual environment"
+      echo "  task deps:install                         # Install development dependencies"
       echo "  task ci:pr                                # Run PR checks"
       echo "  task test:coverage:open                   # Generate and view coverage"
-      echo "  task docker:ci                           # Run Docker workflow"
-      echo "  task quality:all                         # Run all quality checks" 
+      echo "  task docker:ci                            # Run Docker workflow"
+      echo "  task quality:all                          # Run all quality checks" 
