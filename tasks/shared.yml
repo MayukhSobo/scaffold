@@ -76,13 +76,8 @@ tasks:
       fi
       
       # Create virtual environment if it doesn't exist
-      if [ ! -d ".venv" ]; then
-        echo "📦 Creating virtual environment..."
-        python3 -m venv .venv
-        echo "✅ Virtual environment created in .venv/"
-      else
-        echo "✅ Virtual environment already exists"
-      fi
+      rm -rf .venv
+      python3 -m venv .venv
       
       # Activate virtual environment and install dependencies
       echo "📋 Installing Python dependencies..."
@@ -99,39 +94,7 @@ tasks:
       echo "🎯 Python virtual environment setup complete!"
       echo ""
       echo "To activate the environment, run:"
-      echo "  task shared:setup:python:activate"
-
-  setup:python:get-activation-cmd:
-    desc: Get shell-specific activation command (internal helper)
-    silent: true
-    internal: true
-    cmds:
-    - |
-      if [ ! -d ".venv" ]; then
-        return 1
-      fi
-      
-      SHELL_NAME=$(basename "$SHELL")
-      
-      case "$SHELL_NAME" in
-        "fish")
-          if [ -f ".venv/bin/activate.fish" ]; then
-            echo "source .venv/bin/activate.fish"
-          else
-            echo "source .venv/bin/activate"
-          fi
-          ;;
-        "csh" | "tcsh")
-          if [ -f ".venv/bin/activate.csh" ]; then
-            echo "source .venv/bin/activate.csh"
-          else
-            echo "source .venv/bin/activate"
-          fi
-          ;;
-        *)
-          echo "source .venv/bin/activate"
-          ;;
-      esac
+    - task: shared:setup:python:activate
 
   setup:python:show-activation:
     desc: Show shell-specific activation instructions (internal helper)
@@ -149,38 +112,31 @@ tasks:
       
       case "$SHELL_NAME" in
         "fish")
-          if [ -f ".venv/bin/activate.fish" ]; then
-            echo "🐟 To activate in Fish shell, run:"
-            echo "  source .venv/bin/activate.fish"
-          else
-            echo "To activate the environment manually, run:"
-            echo "  source .venv/bin/activate"
-          fi
+          EXTENSION=".fish"
+          SHELL_DISPLAY="Fish"
+          SHELL_EMOJI="🐟"
           ;;
         "csh" | "tcsh")
-          if [ -f ".venv/bin/activate.csh" ]; then
-            echo "🐚 To activate in C shell, run:"
-            echo "  source .venv/bin/activate.csh"
-          else
-            echo "To activate the environment manually, run:"
-            echo "  source .venv/bin/activate"
-          fi
-          ;;
-        "powershell" | "pwsh")
-          echo "⚡ To activate in PowerShell, run:"
-          echo "  .venv/Scripts/Activate.ps1"
-          ;;
-        "cmd")
-          echo "🖥️  To activate in Command Prompt, run:"
-          echo "  .venv\\Scripts\\activate.bat"
+          EXTENSION=".csh"
+          SHELL_DISPLAY="C"
+          SHELL_EMOJI="🐚"
           ;;
         *)
-          echo "🐚 To activate in Bash/Zsh shell, run:"
-          echo "  source .venv/bin/activate"
-          echo ""
-          echo "💡 Or use: eval \"\$(task shared:setup:python:activate:cmd)\""
+          EXTENSION=""
+          SHELL_DISPLAY="Bash/Zsh"
+          SHELL_EMOJI="🐚"
           ;;
       esac
+      
+      # Check if shell-specific activation script exists, otherwise use default
+      ACTIVATION_SCRIPT=".venv/bin/activate$EXTENSION"
+      if [ -f "$ACTIVATION_SCRIPT" ]; then
+        echo "$SHELL_EMOJI To activate in $SHELL_DISPLAY shell, run:"
+        echo "  source $ACTIVATION_SCRIPT"
+      else
+        echo "$SHELL_EMOJI To activate in $SHELL_DISPLAY shell, run:"
+        echo "  source .venv/bin/activate"
+      fi
       
       echo ""
       echo "To deactivate when done:"
@@ -201,25 +157,8 @@ tasks:
       echo "Detected shell: $SHELL_NAME"
       echo ""
     - task: setup:python:show-activation
-    - |
-      echo ""
-      echo "After activation, you can:"
-      echo "  - Use enhanced YAML parsing with PyYAML"
-      echo "  - Run Python scripts with rich formatting"
-      echo "  - Install additional packages with pip"
 
 
-
-  setup:python:activate:cmd:
-    desc: Output activation command for current shell (for use with eval)
-    silent: true
-    cmds:
-    - |
-      if [ ! -d ".venv" ]; then
-        echo "echo '❌ Virtual environment not found. Run task shared:setup:python first.'"
-        exit 1
-      fi
-    - task: setup:python:get-activation-cmd
 
   # Common validation tasks
   validate:go:

@@ -133,9 +133,3 @@ tasks:
     cmds:
     - task test:all
     silent: true
-
-  python:
-    desc: Setup Python virtual environment (alias for shared:setup:python)
-    cmds:
-    - task shared:setup:python
-    silent: true

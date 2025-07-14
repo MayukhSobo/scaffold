@@ -43,9 +43,6 @@ The setup process:
 # Show shell-specific activation instructions
 task shared:setup:python:activate
 
-# Quick activation (Bash/Zsh)
-eval "$(task shared:setup:python:activate:cmd)"
-
 # Or activate manually based on your shell:
 # Bash/Zsh: source .venv/bin/activate
 # Fish: source .venv/bin/activate.fish
