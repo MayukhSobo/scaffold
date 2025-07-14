@@ -44,21 +44,28 @@ log:
       enabled: true
       colors: true
       json_format: false
-    # file:
-    #   driver: "file"
-    #   enabled: true
-    #   directory: "logs"
-    #   filename: "app.log"
-    #   json_format: true
-    #   max_size: 100
-    #   max_backups: 3
-    #   max_age: 7
-    #   compress: true
+    file:
+      driver: "file"
+      enabled: true
+      directory: "logs"
+      filename: "app.log"
+      json_format: true
+      max_size: 100
+      max_backups: 3
+      max_age: 7
+      compress: true
+    datadog_logger:
+      driver: "datadog"
+      enabled: true
+      host: "127.0.0.1"
+      port: 10518
+      service: "scaffold"
+      environment: "local"
+      source: "go"
+      tags: "env:local,service:scaffold,version:1.0.0"
+      timeout: 5
+      json_format: true
   # Future loggers can be easily added:
-  # datadog_logger:
-  #   enabled: false
-  #   api_key: ""
-  #   service: "scaffold"
   # logdna_logger:
   #   enabled: false
   #   ingestion_key: ""

@@ -42,43 +42,12 @@ vars:
   CONFIG_FILE: "configs/local.yml"
   DOCKER_CONFIG_FILE: "configs/docker.yml"
   
-  # Dynamic DSN generation from config files
+  # Dynamic DSN generation from config files (assumes venv is already activated)
   DB_DSN:
-    sh: |
-      if [ -d ".venv" ]; then
-        # Activate virtual environment
-        SHELL_NAME=$(basename "$SHELL")
-        case "$SHELL_NAME" in
-          "fish")
-            [ -f ".venv/bin/activate.fish" ] && source .venv/bin/activate.fish 2>/dev/null || source .venv/bin/activate
-            ;;
-          "csh" | "tcsh")
-            [ -f ".venv/bin/activate.csh" ] && source .venv/bin/activate.csh || source .venv/bin/activate
-            ;;
-          *)
-            source .venv/bin/activate
-            ;;
-        esac
-      fi
-      python scripts/database/db-config.py ${CONFIG_FILE:-configs/local.yml} 2>/dev/null || echo "scaffold:123456@tcp(localhost:3306)/user?charset=utf8mb4&parseTime=True&loc=Local"
+    sh: python scripts/database/db-config.py ${CONFIG_FILE:-configs/local.yml} 2>/dev/null || echo "scaffold:123456@tcp(localhost:3306)/user?charset=utf8mb4&parseTime=True&loc=Local"
   
   DB_DSN_DOCKER:
     sh: |
-      if [ -d ".venv" ]; then
-        # Activate virtual environment
-        SHELL_NAME=$(basename "$SHELL")
-        case "$SHELL_NAME" in
-          "fish")
-            [ -f ".venv/bin/activate.fish" ] && source .venv/bin/activate.fish 2>/dev/null || source .venv/bin/activate
-            ;;
-          "csh" | "tcsh")
-            [ -f ".venv/bin/activate.csh" ] && source .venv/bin/activate.csh || source .venv/bin/activate
-            ;;
-          *)
-            source .venv/bin/activate
-            ;;
-        esac
-      fi
       # For Docker migrations from host, we need to use localhost instead of mysql hostname
       DSN=$(python scripts/database/db-config.py ${DOCKER_CONFIG_FILE:-configs/docker.yml} 2>/dev/null || echo "scaffold:123456@tcp(mysql:3306)/user?charset=utf8mb4&parseTime=True&loc=Local")
       echo "$DSN" | sed 's/@tcp(mysql:/@tcp(localhost:/'
@@ -88,48 +57,18 @@ tasks:
   config:info:
     desc: Show current database configuration
     silent: true
+    deps: [":shared:venv:ensure"]
     cmds:
     - echo "Local Config ({{.CONFIG_FILE}}):"
-    - |
-      if [ -d ".venv" ]; then
-        # Activate virtual environment
-        SHELL_NAME=$(basename "$SHELL")
-        case "$SHELL_NAME" in
-          "fish")
-            [ -f ".venv/bin/activate.fish" ] && source .venv/bin/activate.fish 2>/dev/null || source .venv/bin/activate
-            ;;
-          "csh" | "tcsh")
-            [ -f ".venv/bin/activate.csh" ] && source .venv/bin/activate.csh || source .venv/bin/activate
-            ;;
-          *)
-            source .venv/bin/activate
-            ;;
-        esac
-      fi
-      python scripts/database/db-config.py {{.CONFIG_FILE}} --format env || echo "Failed to read local config"
+    - python scripts/database/db-config.py {{.CONFIG_FILE}} --format env || echo "Failed to read local config"
     - echo ""
     - echo "Docker Config ({{.DOCKER_CONFIG_FILE}}):"
-    - |
-      if [ -d ".venv" ]; then
-        # Activate virtual environment
-        SHELL_NAME=$(basename "$SHELL")
-        case "$SHELL_NAME" in
-          "fish")
-            [ -f ".venv/bin/activate.fish" ] && source .venv/bin/activate.fish 2>/dev/null || source .venv/bin/activate
-            ;;
-          "csh" | "tcsh")
-            [ -f ".venv/bin/activate.csh" ] && source .venv/bin/activate.csh || source .venv/bin/activate
-            ;;
-          *)
-            source .venv/bin/activate
-            ;;
-        esac
-      fi
-      python scripts/database/db-config.py {{.DOCKER_CONFIG_FILE}} --format env || echo "Failed to read Docker config"
+    - python scripts/database/db-config.py {{.DOCKER_CONFIG_FILE}} --format env || echo "Failed to read Docker config"
 
   config:test:
     desc: Test database connectivity using current configuration
     silent: true
+    deps: [":shared:venv:ensure"]
     cmds:
     - echo "Testing local database connection..."
     - |
@@ -154,26 +93,11 @@ tasks:
   shell:
     desc: Connect to database shell using local configuration
     silent: true
+    deps: [":shared:venv:ensure"]
     cmds:
     - |
       CONFIG_FILE=${CONFIG_FILE:-configs/local.yml}
       echo "Using config file: $CONFIG_FILE"
-      
-      if [ -d ".venv" ]; then
-        # Activate virtual environment
-        SHELL_NAME=$(basename "$SHELL")
-        case "$SHELL_NAME" in
-          "fish")
-            [ -f ".venv/bin/activate.fish" ] && source .venv/bin/activate.fish 2>/dev/null || source .venv/bin/activate
-            ;;
-          "csh" | "tcsh")
-            [ -f ".venv/bin/activate.csh" ] && source .venv/bin/activate.csh || source .venv/bin/activate
-            ;;
-          *)
-            source .venv/bin/activate
-            ;;
-        esac
-      fi
       
       # Get database configuration
       DB_CONFIG=$(python scripts/database/db-config.py "$CONFIG_FILE" --format env 2>/dev/null)
@@ -224,50 +148,22 @@ tasks:
   migrate:custom:status:
     desc: Show migration status using custom config file (set CONFIG_FILE env var)
     silent: true
+    deps: [":shared:venv:ensure"]
     cmds:
     - |
       CONFIG_FILE=${CONFIG_FILE:-configs/local.yml}
       echo "Using config file: $CONFIG_FILE"
-      if [ -d ".venv" ]; then
-        # Activate virtual environment
-        SHELL_NAME=$(basename "$SHELL")
-        case "$SHELL_NAME" in
-          "fish")
-            [ -f ".venv/bin/activate.fish" ] && source .venv/bin/activate.fish 2>/dev/null || source .venv/bin/activate
-            ;;
-          "csh" | "tcsh")
-            [ -f ".venv/bin/activate.csh" ] && source .venv/bin/activate.csh || source .venv/bin/activate
-            ;;
-          *)
-            source .venv/bin/activate
-            ;;
-        esac
-      fi
       DSN=$(python scripts/database/db-config.py "$CONFIG_FILE")
       goose -dir {{.MIGRATIONS_DIR}} mysql "$DSN" status
 
   migrate:custom:up:
     desc: Run migrations using custom config file (set CONFIG_FILE env var)
     silent: true
+    deps: [":shared:venv:ensure"]
     cmds:
     - |
       CONFIG_FILE=${CONFIG_FILE:-configs/local.yml}
       echo "Using config file: $CONFIG_FILE"
-      if [ -d ".venv" ]; then
-        # Activate virtual environment
-        SHELL_NAME=$(basename "$SHELL")
-        case "$SHELL_NAME" in
-          "fish")
-            [ -f ".venv/bin/activate.fish" ] && source .venv/bin/activate.fish 2>/dev/null || source .venv/bin/activate
-            ;;
-          "csh" | "tcsh")
-            [ -f ".venv/bin/activate.csh" ] && source .venv/bin/activate.csh || source .venv/bin/activate
-            ;;
-          *)
-            source .venv/bin/activate
-            ;;
-        esac
-      fi
       DSN=$(python scripts/database/db-config.py "$CONFIG_FILE")
       goose -dir {{.MIGRATIONS_DIR}} mysql "$DSN" up
       echo "Migrations applied successfully using $CONFIG_FILE"
@@ -276,6 +172,7 @@ tasks:
   migrate:up:
     desc: Run database migrations (up)
     silent: true
+    deps: [":shared:venv:ensure"]
     cmds:
     - goose -dir {{.MIGRATIONS_DIR}} mysql "{{.DB_DSN}}" up
     - echo "Migrations applied successfully"
@@ -283,6 +180,7 @@ tasks:
   migrate:down:
     desc: Rollback last migration
     silent: true
+    deps: [":shared:venv:ensure"]
     cmds:
     - goose -dir {{.MIGRATIONS_DIR}} mysql "{{.DB_DSN}}" down
     - echo "Migration rolled back successfully"
@@ -290,6 +188,7 @@ tasks:
   migrate:status:
     desc: Show migration status
     silent: true
+    deps: [":shared:venv:ensure"]
     cmds:
     - goose -dir {{.MIGRATIONS_DIR}} mysql "{{.DB_DSN}}" status
 
@@ -309,6 +208,7 @@ tasks:
   migrate:reset:
     desc: Reset database (down all migrations)
     silent: true
+    deps: [":shared:venv:ensure"]
     cmds:
     - goose -dir {{.MIGRATIONS_DIR}} mysql "{{.DB_DSN}}" reset
     - echo "Database reset successfully"
@@ -316,6 +216,7 @@ tasks:
   migrate:version:
     desc: Show current migration version
     silent: true
+    deps: [":shared:venv:ensure"]
     cmds:
     - goose -dir {{.MIGRATIONS_DIR}} mysql "{{.DB_DSN}}" version
 
@@ -323,6 +224,7 @@ tasks:
   migrate:docker:up:
     desc: Run database migrations against Docker MySQL
     silent: true
+    deps: [":shared:venv:ensure"]
     cmds:
     - goose -dir {{.MIGRATIONS_DIR}} mysql "{{.DB_DSN_DOCKER}}" up
     - echo "Docker migrations applied successfully"
@@ -330,6 +232,7 @@ tasks:
   migrate:docker:down:
     desc: Rollback last migration against Docker MySQL
     silent: true
+    deps: [":shared:venv:ensure"]
     cmds:
     - goose -dir {{.MIGRATIONS_DIR}} mysql "{{.DB_DSN_DOCKER}}" down
     - echo "Docker migration rolled back successfully"
@@ -337,12 +240,14 @@ tasks:
   migrate:docker:status:
     desc: Show migration status against Docker MySQL
     silent: true
+    deps: [":shared:venv:ensure"]
     cmds:
     - goose -dir {{.MIGRATIONS_DIR}} mysql "{{.DB_DSN_DOCKER}}" status
 
   migrate:docker:reset:
     desc: Reset database against Docker MySQL
     silent: true
+    deps: [":shared:venv:ensure"]
     cmds:
     - goose -dir {{.MIGRATIONS_DIR}} mysql "{{.DB_DSN_DOCKER}}" reset
     - echo "Docker database reset successfully" 

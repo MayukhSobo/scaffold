@@ -48,4 +48,25 @@ log:
       driver: "console"
       enabled: true
       colors: true
-      json_format: false 
+      json_format: false
+    file:
+      driver: "file"
+      enabled: true
+      directory: "/app/logs"
+      filename: "app.log"
+      json_format: true
+      max_size: 100
+      max_backups: 3
+      max_age: 7
+      compress: true
+    datadog_logger:
+      driver: "datadog"
+      enabled: true
+      host: "datadog-agent"  # Assuming Datadog agent runs as a sidecar container
+      port: 10518
+      service: "scaffold"
+      environment: "docker"
+      source: "go"
+      tags: "env:docker,service:scaffold,version:1.0.0,container:true"
+      timeout: 10
+      json_format: true 

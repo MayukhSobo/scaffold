@@ -157,15 +157,16 @@ tasks:
   compose:config:
     desc: Show current Docker Compose configuration from configs/docker.yml
     silent: true
+    deps: [":shared:venv:ensure"]
     cmds:
     - echo "Current Docker Compose Configuration (from configs/docker.yml):"
-    - task: _activate_venv
     - python scripts/docker/docker-compose-env.py configs/docker.yml --format env 2>/dev/null || echo "Error reading configuration"
 
   compose:sync:
     desc: Sync configuration files from configs/docker.yml (internal task)
     internal: true
     silent: true
+    deps: [":shared:venv:ensure"]
     sources:
       - configs/docker.yml
     generates:
@@ -174,7 +175,6 @@ tasks:
       - db/mysql-init.sql
     cmds:
     - echo "🔄 Syncing Docker Compose with configs/docker.yml..."
-    - task: _activate_venv
     - python scripts/docker/generate-docker-compose.py configs/docker.yml --output docker-compose.yml 2>/dev/null
     - python scripts/docker/docker-compose-env.py configs/docker.yml --format compose > .env 2>/dev/null
     - python scripts/database/generate-mysql-init.py configs/docker.yml 2>/dev/null
@@ -215,10 +215,10 @@ tasks:
   compose:logs:app:
     desc: View logs from app service only (use -f to follow)
     silent: true
+    deps: [":shared:venv:ensure"]
     vars:
       FLAGS: '{{default "" .CLI_ARGS}}'
     cmds:
-    - task: _activate_venv
     - |
       APP_HOST=$(python scripts/docker/docker-compose-env.py configs/docker.yml --format env | grep "^HTTP_HOST=" | cut -d'=' -f2)
       docker-compose logs {{.FLAGS}} "$APP_HOST"
@@ -235,8 +235,8 @@ tasks:
     desc: Connect to MySQL database using dynamic configuration
     aliases: [db:shell]
     silent: true
+    deps: [":shared:venv:ensure"]
     cmds:
-    - task: _activate_venv
     - |
       DB_CONFIG=$(python scripts/docker/docker-compose-env.py configs/docker.yml --format env)
       DB_SERVICE=$(echo "$DB_CONFIG" | grep "^DB_HOST=" | cut -d'=' -f2)
@@ -250,8 +250,8 @@ tasks:
   compose:adminer:
     desc: Open Adminer in browser with MySQL credentials from configuration
     silent: true
+    deps: [":shared:venv:ensure"]
     cmds:
-    - task: _activate_venv
     - |
       DB_CONFIG=$(python scripts/docker/docker-compose-env.py configs/docker.yml --format env)
       DB_USER=$(echo "$DB_CONFIG" | grep "^DB_USER=" | cut -d'=' -f2)
@@ -276,34 +276,12 @@ tasks:
     - docker-compose ps
 
   # Internal helper tasks
-  _activate_venv:
-    desc: Activate virtual environment (internal task)
-    internal: true
-    silent: true
-    cmds:
-    - |
-      if [ -d ".venv" ]; then
-        # Activate virtual environment
-        SHELL_NAME=$(basename "$SHELL")
-        case "$SHELL_NAME" in
-          "fish")
-            [ -f ".venv/bin/activate.fish" ] && source .venv/bin/activate.fish 2>/dev/null || source .venv/bin/activate
-            ;;
-          "csh" | "tcsh")
-            [ -f ".venv/bin/activate.csh" ] && source .venv/bin/activate.csh || source .venv/bin/activate
-            ;;
-          *)
-            source .venv/bin/activate
-            ;;
-        esac
-      fi
-
   _show_service_urls:
     desc: Show service URLs (internal task)
     internal: true
     silent: true
+    deps: [":shared:venv:ensure"]
     cmds:
-    - task: _activate_venv
     - |
       # Read configuration and display correct URLs
       CONFIG=$(python scripts/docker/docker-compose-env.py configs/docker.yml --format env)

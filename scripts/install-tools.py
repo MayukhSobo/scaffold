@@ -13,6 +13,8 @@ import tempfile
 import requests
 import zipfile
 import tarfile
+import subprocess
+import re
 from pathlib import Path
 from typing import List, Dict, Optional, Tuple
 
@@ -20,7 +22,7 @@ from typing import List, Dict, Optional, Tuple
 from common import ScriptBase, has_rich, get_console, has_requests
 
 class ToolInstaller(ScriptBase):
-    """Tool installation manager with rich output"""
+    """Tool installation manager with rich output and proper version checking"""
     
     def __init__(self):
         super().__init__("ToolInstaller")
@@ -35,102 +37,189 @@ class ToolInstaller(ScriptBase):
             'gotestsum': {
                 'version_key': 'tools.gotestsum',
                 'install_method': self._install_go_tool,
-                'check_method': self._check_go_tool,
+                'check_method': self._check_go_tool_version,
                 'description': 'Test runner',
                 'package': 'gotest.tools/gotestsum'
             },
             'gosec': {
                 'version_key': 'tools.gosec',
                 'install_method': self._install_go_tool,
-                'check_method': self._check_go_tool,
+                'check_method': self._check_go_tool_version,
                 'description': 'Security analyzer',
                 'package': 'github.com/securego/gosec/v2/cmd/gosec'
             },
             'govulncheck': {
                 'version_key': 'tools.govulncheck',
                 'install_method': self._install_go_tool,
-                'check_method': self._check_go_tool,
+                'check_method': self._check_go_tool_version,
                 'description': 'Vulnerability checker',
                 'package': 'golang.org/x/vuln/cmd/govulncheck'
             },
             'air': {
                 'version_key': 'tools.air',
                 'install_method': self._install_go_tool,
-                'check_method': self._check_go_tool,
+                'check_method': self._check_go_tool_version,
                 'description': 'Live reload',
                 'package': 'github.com/air-verse/air'
             },
             'gocov': {
                 'version_key': 'tools.gocov',
                 'install_method': self._install_go_tool,
-                'check_method': self._check_go_tool,
+                'check_method': self._check_go_tool_version,
                 'description': 'Coverage tool',
                 'package': 'github.com/axw/gocov/gocov'
             },
             'gocov-html': {
                 'version_key': 'tools.gocov-html',
                 'install_method': self._install_go_tool,
-                'check_method': self._check_go_tool,
+                'check_method': self._check_go_tool_version,
                 'description': 'Coverage HTML generator',
                 'package': 'github.com/matm/gocov-html/cmd/gocov-html'
             },
             'go-cover-treemap': {
                 'version_key': 'tools.go-cover-treemap',
                 'install_method': self._install_go_tool,
-                'check_method': self._check_go_tool,
+                'check_method': self._check_go_tool_version,
                 'description': 'Coverage treemap',
                 'package': 'github.com/nikolaydubina/go-cover-treemap'
             },
             'trivy': {
                 'version_key': 'tools.trivy',
-                'install_method': self._install_trivy,
-                'check_method': self._check_binary_tool,
+                'install_method': self._install_trivy_versioned,
+                'check_method': self._check_trivy_version,
                 'description': 'Security scanner'
             },
             'goose': {
                 'version_key': 'tools.goose',
                 'install_method': self._install_go_tool,
-                'check_method': self._check_go_tool,
+                'check_method': self._check_go_tool_version,
                 'description': 'Database migration tool',
                 'package': 'github.com/pressly/goose/v3/cmd/goose'
             },
             'codeql-cli': {
                 'version_key': 'tools.codeql-cli',
                 'install_method': self._install_codeql_cli,
-                'check_method': self._check_binary_tool,
-                'description': 'CodeQL CLI'
+                'check_method': self._check_codeql_version,
+                'description': 'Code analysis tool'
             },
             'sqlc': {
                 'version_key': 'tools.sqlc',
                 'install_method': self._install_sqlc,
-                'check_method': self._check_sqlc,
-                'description': 'SQLC'
+                'check_method': self._check_sqlc_version,
+                'description': 'SQL code generator'
             }
         }
-    
-    def _check_binary_tool(self, tool_name: str) -> bool:
-        """Check if a binary tool is available"""
-        return self.check_binary_exists(tool_name)
-    
-    def _check_sqlc(self, tool_name: str) -> bool:
-        """Check if a binary tool is available"""
-        return self.check_binary_exists(tool_name)
-    
-    def _check_go_tool(self, tool_name: str) -> bool:
-        """Check if a Go tool is available"""
-        return self._check_binary_tool(tool_name)
-    
-    def _check_golangci_lint(self, tool_name: str) -> bool:
-        """Check golangci-lint version"""
-        if not self._check_binary_tool(tool_name):
+
+    def _get_tool_version(self, tool_name: str, cmd: List[str], pattern: str) -> Optional[str]:
+        """Get version of an installed tool"""
+        try:
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=10)
+            if result.returncode == 0:
+                output = result.stdout + result.stderr
+                match = re.search(pattern, output)
+                if match:
+                    return match.group(1).lstrip('v')
+        except:
+            pass
+        return None
+
+    def _check_tool_version(self, tool_name: str, version_key: str, version_cmd: List[str], version_pattern: str) -> bool:
+        """Check if tool is installed with correct version"""
+        if not self.check_binary_exists(tool_name):
             return False
         
-        success, output = self.cmd_runner.run([tool_name, "version", "--short"])
-        if success:
-            expected_version = self.version_helper.get_version('tools.golangci-lint')
-            return expected_version.lstrip('v') in output
-        return True  # If we can't check version, assume it's okay
-    
+        expected_version = self.version_helper.get_version(version_key)
+        if not expected_version:
+            self.logger.warn(f"No expected version found for {tool_name}")
+            return True  # If no version specified, assume current is fine
+        
+        installed_version = self._get_tool_version(tool_name, version_cmd, version_pattern)
+        if not installed_version:
+            self.logger.warn(f"Could not determine {tool_name} version")
+            return False  # Can't determine version, assume needs reinstall
+        
+        # Normalize versions for comparison
+        expected_clean = expected_version.lstrip('v')
+        installed_clean = installed_version.lstrip('v')
+        
+        is_correct = expected_clean == installed_clean
+        if not is_correct:
+            self.logger.info(f"{tool_name}: installed={installed_clean}, expected={expected_clean}")
+        
+        return is_correct
+
+    def _check_go_tool_version(self, tool_name: str) -> bool:
+        """Check Go tool version using go version -m"""
+        if not self.check_binary_exists(tool_name):
+            return False
+        
+        expected_version = self.version_helper.get_version(self.tools_config[tool_name]['version_key'])
+        if not expected_version:
+            return True
+        
+        # Use go version -m to get module info
+        tool_path = shutil.which(tool_name)
+        if not tool_path:
+            return False
+        
+        try:
+            result = subprocess.run(['go', 'version', '-m', tool_path], 
+                                    capture_output=True, text=True, timeout=10)
+            if result.returncode == 0:
+                # Look for version in the build info
+                for line in result.stdout.split('\n'):
+                    if 'mod' in line and self.tools_config[tool_name]['package'] in line:
+                        parts = line.split()
+                        if len(parts) >= 3:
+                            installed_version = parts[2].lstrip('v')
+                            expected_clean = expected_version.lstrip('v')
+                            
+                            # Handle special cases
+                            if expected_version == 'dev' or installed_version == '(devel)':
+                                return True
+                            
+                            if expected_clean == installed_version:
+                                return True
+                            
+                            self.logger.info(f"{tool_name}: installed={installed_version}, expected={expected_clean}")
+                            return False
+        except:
+            pass
+        
+        return False
+
+    def _check_golangci_lint(self, tool_name: str) -> bool:
+        """Check golangci-lint version"""
+        return self._check_tool_version(
+            tool_name, 'tools.golangci-lint',
+            ['golangci-lint', '--version'],
+            r'golangci-lint has version ([0-9]+\.[0-9]+\.[0-9]+)'
+        )
+
+    def _check_trivy_version(self, tool_name: str) -> bool:
+        """Check trivy version"""
+        return self._check_tool_version(
+            tool_name, 'tools.trivy',
+            ['trivy', '--version'],
+            r'Version: ([0-9]+\.[0-9]+\.[0-9]+)'
+        )
+
+    def _check_codeql_version(self, tool_name: str) -> bool:
+        """Check CodeQL version"""
+        return self._check_tool_version(
+            tool_name, 'tools.codeql-cli',
+            ['codeql', 'version'],
+            r'CodeQL command-line toolchain release ([0-9]+\.[0-9]+\.[0-9]+)'
+        )
+
+    def _check_sqlc_version(self, tool_name: str) -> bool:
+        """Check SQLC version"""
+        return self._check_tool_version(
+            tool_name, 'tools.sqlc',
+            ['sqlc', 'version'],
+            r'v([0-9]+\.[0-9]+\.[0-9]+)'
+        )
+
     def _install_go_tool(self, tool_name: str, config: Dict) -> bool:
         """Install a Go tool using go install"""
         version = self.version_helper.get_version(config['version_key'])
@@ -139,7 +228,6 @@ class ToolInstaller(ScriptBase):
         # Ensure version is correctly formatted for go install
         if version:
             if version == 'dev':
-                # 'dev' often maps to 'latest' for go install
                 version = 'latest'
             elif version != 'latest' and not version.startswith('v'):
                 version = f"v{version}"
@@ -151,7 +239,6 @@ class ToolInstaller(ScriptBase):
             f"Installing {tool_name}@{version}..."
         )
 
-        # Fallback for specific tools that might have versioning quirks
         if not success and tool_name == 'go-cover-treemap':
             self.logger.warn(f"Version '{version}' for {tool_name} failed. Trying @latest...")
             package_with_version = f"{package}@latest"
@@ -166,105 +253,115 @@ class ToolInstaller(ScriptBase):
         else:
             self.logger.error(f"Failed to install {tool_name}: {output}")
             return False
-    
-    def _install_golangci_lint_from_script(self, tool_name: str, config: Dict) -> bool:
-        """Install golangci-lint using the official install script."""
-        version = self.version_helper.get_version(config['version_key'])
-        if version and not version.startswith('v'):
-            version = f"v{version}"
 
-        if not has_requests():
-            self.logger.error("The 'requests' library is required to download the installer. Please run 'pip install requests'.")
+    def _install_trivy_versioned(self, tool_name: str, config: Dict) -> bool:
+        """Install trivy with specific version from GitHub releases"""
+        version = self.version_helper.get_version(config['version_key'])
+        if not version:
+            self.logger.error(f"No version specified for {tool_name}")
+            return False
+        
+        system = platform.system().lower()
+        arch = platform.machine().lower()
+        
+        # Map platform names
+        if system == "darwin":
+            platform_str = "macOS"
+        elif system == "linux":
+            platform_str = "Linux"
+        else:
+            self.logger.error(f"Unsupported OS for trivy: {system}")
+            return False
+        
+        # Map architecture names
+        if arch in ["x86_64", "amd64"]:
+            arch_str = "64bit"
+        elif arch in ["arm64", "aarch64"]:
+            arch_str = "ARM64"
+        else:
+            self.logger.error(f"Unsupported architecture for trivy: {arch}")
+            return False
+        
+        # Download URL format
+        filename = f"trivy_{version}_{platform_str}-{arch_str}.tar.gz"
+        download_url = f"https://github.com/aquasecurity/trivy/releases/download/v{version}/{filename}"
+        
+        # Get GOPATH/bin for install location
+        try:
+            result = subprocess.run(['go', 'env', 'GOPATH'], capture_output=True, text=True)
+            if result.returncode != 0:
+                self.logger.error("Failed to get GOPATH")
+                return False
+            install_dir = Path(result.stdout.strip()) / "bin"
+            install_dir.mkdir(parents=True, exist_ok=True)
+        except:
+            self.logger.error("Failed to determine install directory")
+            return False
+        
+        self.logger.info(f"Installing trivy v{version}...")
+        
+        try:
+            with tempfile.TemporaryDirectory() as tmpdir:
+                tar_path = Path(tmpdir) / filename
+                
+                # Download
+                response = requests.get(download_url, stream=True, timeout=120)
+                response.raise_for_status()
+                with open(tar_path, 'wb') as f:
+                    shutil.copyfileobj(response.raw, f)
+                
+                # Extract
+                with tarfile.open(tar_path, 'r:gz') as tar_ref:
+                    tar_ref.extractall(tmpdir)
+                
+                # Move binary to install directory
+                binary_path = Path(tmpdir) / "trivy"
+                if binary_path.exists():
+                    target_path = install_dir / "trivy"
+                    shutil.move(str(binary_path), str(target_path))
+                    os.chmod(target_path, 0o755)
+                    self.logger.success(f"✅ Trivy v{version} installed to {target_path}")
+                    return True
+                else:
+                    self.logger.error("Trivy binary not found in archive")
+                    return False
+                    
+        except Exception as e:
+            self.logger.error(f"Failed to install trivy: {e}")
             return False
 
-        # Get GOPATH/bin
+    def _install_golangci_lint_from_script(self, tool_name: str, config: Dict) -> bool:
+        """Install golangci-lint using the official installer script"""
+        version = self.version_helper.get_version(config['version_key'])
+        if not version:
+            self.logger.error(f"No version specified for {tool_name}")
+            return False
+
         success, gopath_output = self.cmd_runner.run(['go', 'env', 'GOPATH'])
         if not success:
             self.logger.error("Failed to get GOPATH for golangci-lint installation.")
             return False
-        install_dir = str(Path(gopath_output.strip()) / "bin")
 
-        installer_path = None
+        install_dir = Path(gopath_output.strip().rstrip('/')) / "bin"
+        install_dir.mkdir(parents=True, exist_ok=True)
+
+        script_url = "https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh"
+        
         try:
-            # 1. Download the script content
-            url = "https://raw.githubusercontent.com/golangci/golangci-lint/HEAD/install.sh"
-            self.logger.verbose(f"Downloading installer from {url}")
-            response = requests.get(url, timeout=30)
-            response.raise_for_status()
+            cmd = f"curl -sSfL {script_url} | sh -s -- -b {install_dir} v{version}"
+            result = subprocess.run(cmd, shell=True, capture_output=True, text=True, timeout=120)
             
-            # 2. Write to a temporary file
-            with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.sh', prefix='golangci-lint-installer-') as f:
-                f.write(response.text)
-                installer_path = f.name
-            
-            # 3. Make executable
-            Path(installer_path).chmod(0o755)
-            self.logger.verbose(f"Installer script saved to {installer_path}")
-
-            # 4. Run the script
-            install_cmd = [installer_path, '-b', install_dir, version]
-            success, output = self.cmd_runner.run_with_status(
-                install_cmd,
-                f"Installing {tool_name} {version}"
-            )
-            
-            if not success:
-                self.logger.error(f"Failed to install {tool_name}: {output}")
+            if result.returncode == 0:
+                self.logger.success(f"✅ golangci-lint v{version} installed")
+                return True
+            else:
+                self.logger.error(f"Failed to install golangci-lint: {result.stderr}")
                 return False
-
+                
         except Exception as e:
-            self.logger.error(f"An error occurred during {tool_name} installation: {e}")
+            self.logger.error(f"Error installing golangci-lint: {e}")
             return False
-        finally:
-            # 5. Clean up installer
-            if installer_path and Path(installer_path).exists():
-                os.unlink(installer_path)
-                self.logger.verbose(f"Removed temporary installer {installer_path}")
-        
-        return True
-    
-    def _install_trivy(self, tool_name: str, config: Dict) -> bool:
-        """Install trivy using platform-specific method"""
-        system = platform.system().lower()
-        
-        self.logger.info(f"Installing {tool_name}...")
-        if system == "darwin":
-            success = self._install_trivy_macos()
-        elif system == "linux":
-            success = self._install_trivy_linux()
-        else:
-            self.logger.error(f"Unsupported OS: {system}. Please install Trivy manually.")
-            return False
-        
-        if success:
-            self.logger.info(f"{tool_name} installed successfully")
-            return True
-        else:
-            self.logger.error(f"Failed to install {tool_name}")
-            return False
-    
-    def _install_trivy_macos(self) -> bool:
-        """Install trivy on macOS using Homebrew"""
-        if not self.check_binary_exists('brew'):
-            self.logger.error("Homebrew not found. Please install Homebrew first.")
-            return False
-        
-        success, output = self.cmd_runner.run(['brew', 'install', 'aquasecurity/trivy/trivy'])
-        return success
-    
-    def _install_trivy_linux(self) -> bool:
-        """Install trivy on Linux using apt-get"""
-        if not self.check_binary_exists('apt-get'):
-            self.logger.error("apt-get not found. Cannot install Trivy automatically.")
-            return False
-        
-        self.cmd_runner.run(['sudo', 'apt-get', 'install', 'wget', 'apt-transport-https', 'gnupg', 'lsb-release'])
-        self.cmd_runner.run(['wget', '-qO', '-', 'https://aquasecurity.github.io/trivy-repo/deb/public.key', '|', 'sudo', 'apt-key', 'add', '-'])
-        self.cmd_runner.run(['echo', 'deb', 'https://aquasecurity.github.io/trivy-repo/deb', '$(lsb_release', '-cs)', 'main', '|', 'sudo', 'tee', '-a', '/etc/apt/sources.list.d/trivy.list'])
-        self.cmd_runner.run(['sudo', 'apt-get', 'update'])
-        success, output = self.cmd_runner.run(['sudo', 'apt-get', 'install', '-y', 'trivy'])
-        return success
-    
+
     def _install_codeql_cli(self, tool_name: str, config: Dict) -> bool:
         """Install CodeQL CLI from GitHub releases."""
         version = self.version_helper.get_version(config['version_key'])
@@ -273,8 +370,7 @@ class ToolInstaller(ScriptBase):
             return False
 
         system = platform.system().lower()
-        arch = platform.machine().lower()
-
+        
         if system == "darwin":
             platform_str = "osx64"
         elif system == "linux":
@@ -282,72 +378,60 @@ class ToolInstaller(ScriptBase):
         else:
             self.logger.error(f"Unsupported OS for CodeQL CLI: {system}")
             return False
-        
-        # Determine architecture for download URL
-        if arch == "arm64" and system == "darwin":
-            # For Apple Silicon, the binary might be under osx-arm64, but check official naming
-            # For now, let's assume it's included in osx64 or a specific name is needed
-            pass
 
         download_url = f"https://github.com/github/codeql-cli-binaries/releases/download/{version}/codeql-{platform_str}.zip"
         
-        # Get GOPATH/bin to determine install location
-        success, gopath_output = self.cmd_runner.run(['go', 'env', 'GOPATH'])
-        if not success:
-            self.logger.error("Failed to get GOPATH for CodeQL installation.")
-            return False
-        install_dir = Path(gopath_output.strip().rstrip('/')) / "bin"
-        install_dir.mkdir(parents=True, exist_ok=True)
-        codeql_install_base_dir = install_dir.parent / "codeql"
-        codeql_install_base_dir.mkdir(parents=True, exist_ok=True)
-
-        self.logger.info(f"Downloading CodeQL v{version} to {codeql_install_base_dir}...")
-        
+        # Get GOPATH/bin for install location
         try:
-            # Check if already installed
-            if (codeql_install_base_dir / "codeql").exists():
-                self.logger.info("CodeQL seems to be already installed.")
-            else:
-                with tempfile.TemporaryDirectory() as tmpdir:
-                    zip_path = Path(tmpdir) / "codeql.zip"
-                    
-                    # Download
-                    response = requests.get(download_url, stream=True, timeout=120)
-                    response.raise_for_status()
-                    with open(zip_path, 'wb') as f:
-                        shutil.copyfileobj(response.raw, f)
-                    
-                    # Unzip
-                    with zipfile.ZipFile(zip_path, 'r') as zip_ref:
-                        zip_ref.extractall(codeql_install_base_dir)
-            
-            # Create symlink in gopath/bin
-            binary_path = codeql_install_base_dir / "codeql"
-            symlink_path = install_dir / "codeql"
-            
-            if binary_path.exists():
-                if symlink_path.exists() and symlink_path.is_symlink():
-                    self.logger.info("Symlink already exists.")
-                else:
-                    os.symlink(binary_path, symlink_path)
-                
-                # Ensure the binary and all its tools are executable
-                binary_path.chmod(0o755)
-                
-                # Recursively set execute permissions on all files in the tools dir
-                tools_dir = codeql_install_base_dir / "tools"
-                if tools_dir.is_dir():
-                    for f in tools_dir.rglob('*'):
-                        if f.is_file():
-                            f.chmod(0o755)
-
-                self.logger.success(f"✅ CodeQL symlinked to {symlink_path}")
-                return True
-            else:
-                self.logger.error(f"Could not find 'codeql' binary in the extracted archive.")
+            result = subprocess.run(['go', 'env', 'GOPATH'], capture_output=True, text=True)
+            if result.returncode != 0:
+                self.logger.error("Failed to get GOPATH")
                 return False
+            install_dir = Path(result.stdout.strip()) / "bin"
+            install_dir.mkdir(parents=True, exist_ok=True)
+            codeql_install_base_dir = install_dir.parent / "codeql"
+            codeql_install_base_dir.mkdir(parents=True, exist_ok=True)
+        except:
+            self.logger.error("Failed to determine install directory")
+            return False
+
+        self.logger.info(f"Installing CodeQL v{version}...")
+
+        try:
+            with tempfile.TemporaryDirectory() as tmpdir:
+                zip_path = Path(tmpdir) / "codeql.zip"
+                
+                # Download
+                response = requests.get(download_url, stream=True, timeout=120)
+                response.raise_for_status()
+                with open(zip_path, 'wb') as f:
+                    shutil.copyfileobj(response.raw, f)
+                
+                # Extract
+                with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+                    zip_ref.extractall(tmpdir)
+                
+                # Move codeql directory
+                codeql_dir = Path(tmpdir) / "codeql"
+                if codeql_dir.exists():
+                    if codeql_install_base_dir.exists():
+                        shutil.rmtree(codeql_install_base_dir)
+                    shutil.move(str(codeql_dir), str(codeql_install_base_dir))
+                    
+                    # Create symlink in bin directory
+                    codeql_bin = install_dir / "codeql"
+                    if codeql_bin.exists():
+                        codeql_bin.unlink()
+                    codeql_bin.symlink_to(codeql_install_base_dir / "codeql")
+                    
+                    self.logger.success(f"✅ CodeQL v{version} installed")
+                    return True
+                else:
+                    self.logger.error("CodeQL directory not found in archive")
+                    return False
+                    
         except Exception as e:
-            self.logger.error(f"An error occurred during CodeQL installation: {e}")
+            self.logger.error(f"Failed to install CodeQL: {e}")
             return False
 
     def _install_sqlc(self, tool_name: str, config: Dict) -> bool:
@@ -376,17 +460,22 @@ class ToolInstaller(ScriptBase):
             self.logger.error(f"Unsupported ARCH for SQLC: {arch}")
             return False
 
-        download_url = f"https://github.com/sqlc-dev/sqlc/releases/download/{version}/sqlc_{version[1:]}_{platform_str}_{arch_str}.tar.gz"
+        version_clean = version.lstrip('v')
+        download_url = f"https://github.com/sqlc-dev/sqlc/releases/download/{version}/sqlc_{version_clean}_{platform_str}_{arch_str}.tar.gz"
         
-        # Get GOPATH/bin to determine install location
-        success, gopath_output = self.cmd_runner.run(['go', 'env', 'GOPATH'])
-        if not success:
-            self.logger.error("Failed to get GOPATH for SQLC installation.")
+        # Get GOPATH/bin for install location
+        try:
+            result = subprocess.run(['go', 'env', 'GOPATH'], capture_output=True, text=True)
+            if result.returncode != 0:
+                self.logger.error("Failed to get GOPATH")
+                return False
+            install_dir = Path(result.stdout.strip()) / "bin"
+            install_dir.mkdir(parents=True, exist_ok=True)
+        except:
+            self.logger.error("Failed to determine install directory")
             return False
-        install_dir = Path(gopath_output.strip().rstrip('/')) / "bin"
-        install_dir.mkdir(parents=True, exist_ok=True)
         
-        self.logger.info(f"Downloading SQLC {version}...")
+        self.logger.info(f"Installing SQLC {version}...")
         
         try:
             with tempfile.TemporaryDirectory() as tmpdir:
@@ -398,18 +487,24 @@ class ToolInstaller(ScriptBase):
                 with open(tar_path, 'wb') as f:
                     shutil.copyfileobj(response.raw, f)
                 
-                # Unzip
+                # Extract
                 with tarfile.open(tar_path, 'r:gz') as tar_ref:
                     tar_ref.extractall(tmpdir)
 
                 # Move sqlc binary to install_dir
                 binary_path = Path(tmpdir) / "sqlc"
-                shutil.move(str(binary_path), str(install_dir / "sqlc"))
-                
-                self.logger.success(f"✅ SQLC installed to {install_dir / 'sqlc'}")
-                return True
+                if binary_path.exists():
+                    target_path = install_dir / "sqlc"
+                    shutil.move(str(binary_path), str(target_path))
+                    os.chmod(target_path, 0o755)
+                    self.logger.success(f"✅ SQLC {version} installed")
+                    return True
+                else:
+                    self.logger.error("SQLC binary not found in archive")
+                    return False
+                    
         except Exception as e:
-            self.logger.error(f"An error occurred during SQLC installation: {e}")
+            self.logger.error(f"Failed to install SQLC: {e}")
             return False
 
     def install_tool(self, tool_name: str) -> bool:
@@ -419,12 +514,10 @@ class ToolInstaller(ScriptBase):
             return False
         
         config = self.tools_config[tool_name]
-        
-        # Install the tool
         return config['install_method'](tool_name, config)
     
     def install_tools(self, tools: List[str] = None) -> bool:
-        """Install multiple tools"""
+        """Install multiple tools with version awareness"""
         if not tools:
             tools = list(self.tools_config.keys())
         
@@ -440,80 +533,70 @@ class ToolInstaller(ScriptBase):
             table = self.rich.create_table(title="Tools to Install")
             table.add_column("Tool", style="cyan", no_wrap=True)
             table.add_column("Description", style="white")
-            table.add_column("Version", style="yellow")
+            table.add_column("Expected Version", style="yellow")
+            table.add_column("Status", style="bold")
             
             for tool in tools:
                 if tool in self.tools_config:
                     config = self.tools_config[tool]
                     version = self.version_helper.get_version(config['version_key'])
-                    table.add_row(tool, config['description'], version)
+                    
+                    # Check current status
+                    if config['check_method'](tool):
+                        status = "✅ Current"
+                    else:
+                        status = "🔄 Needs Install/Update"
+                    
+                    table.add_row(tool, config['description'], version, status)
             
             self.rich.print_table(table)
             console.print()
-        else:
-            print(f"Installing tools: {', '.join(tools)}")
 
         # --- Phase 1: Check all tools ---
-        self.rich.print_panel("1. Checking Tool Status", style="bold blue")
+        self.rich.print_panel("1. Checking Tool Versions", style="bold blue")
         tools_to_install = []
         for tool_name in tools:
+            if tool_name not in self.tools_config:
+                continue
+                
             config = self.tools_config[tool_name]
             if config['check_method'](tool_name):
-                self.logger.info(f"{tool_name} is already installed and up to date.")
+                self.logger.info(f"{tool_name} is already installed with correct version")
             else:
-                self.logger.warn(f"{tool_name} is not installed or out of date.")
+                self.logger.warn(f"{tool_name} needs installation or update")
                 tools_to_install.append(tool_name)
 
-        # --- Phase 2: Install missing tools ---
+        # --- Phase 2: Install missing/outdated tools ---
         if not tools_to_install:
-            success_count = len(tools)
-        else:
-            self.rich.print_panel(f"2. Installing {len(tools_to_install)} Missing/Outdated Tool(s)", style="bold blue")
-            
-            initial_success_count = len(tools) - len(tools_to_install)
-            installed_count = 0
-
-            if has_rich():
-                from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn
-                from rich_custom_columns import TaskProgressColumn
-                with Progress(
-                    SpinnerColumn(),
-                    TextColumn("[bold blue]{task.description}"),
-                    BarColumn(),
-                    TaskProgressColumn(),
-                    console=get_console()
-                ) as progress:
-                    task = progress.add_task("Installing...", total=len(tools_to_install))
-                    
-                    for tool_name in tools_to_install:
-                        progress.update(task, description=f"Installing {tool_name}...")
-                        if self.install_tool(tool_name):
-                            installed_count += 1
-                        progress.advance(task)
+            self.logger.success("✅ All tools are already installed with correct versions")
+            return True
+        
+        self.rich.print_panel(f"2. Installing {len(tools_to_install)} Tool(s)", style="bold blue")
+        
+        success_count = 0
+        for tool_name in tools_to_install:
+            if self.install_tool(tool_name):
+                success_count += 1
             else:
-                for tool_name in tools_to_install:
-                    if self.install_tool(tool_name):
-                        installed_count += 1
-            
-            success_count = initial_success_count + installed_count
+                self.logger.error(f"Failed to install {tool_name}")
+
+        # --- Phase 3: Final Report ---
+        total_success = len(tools) - len(tools_to_install) + success_count
         
-        total_count = len(tools)
-        
-        # Summary
-        if success_count == total_count:
+        if total_success == len(tools):
             self.rich.print_panel(
-                f"✅ All {success_count} tools are installed and up to date!",
-                title="🎉 Installation Complete",
+                f"✅ All {len(tools)} tools installed successfully",
+                title="🎉 Installation Complete!",
                 style="green"
             )
+            return True
         else:
             self.rich.print_panel(
-                f"⚠️  {success_count}/{total_count} tools installed successfully",
-                title="⚠️  Installation Completed with Issues",
+                f"⚠️  {total_success}/{len(tools)} tools installed successfully",
+                title="Partial Success",
                 style="yellow"
             )
-        
-        return success_count == total_count
+            return False
 
 def main():
     """Main entry point"""
@@ -525,7 +608,7 @@ def main():
     # Show header
     installer.rich.print_panel(
         "Development Tool Installer",
-        title="Using versions from versions.yml",
+        title="Version-aware tool installation using versions.yml",
         style="bold blue"
     )
     
@@ -539,5 +622,5 @@ def main():
     else:
         installer.exit_with_success()
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main() 

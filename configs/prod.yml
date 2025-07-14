@@ -67,3 +67,14 @@ log:
       max_backups: 5
       max_age: 30
       compress: true
+    datadog_logger:
+      driver: "datadog"
+      enabled: true
+      host: "127.0.0.1"
+      port: 10518
+      service: "scaffold"
+      environment: "production"
+      source: "go"
+      tags: "env:production,service:scaffold,version:1.0.0"
+      timeout: 10
+      json_format: true

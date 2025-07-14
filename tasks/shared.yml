@@ -1,11 +1,36 @@
 version: "3"
 
 tasks:
+  # Virtual environment management
+  venv:ensure:
+    desc: Ensure Python virtual environment exists and is activated
+    silent: true
+    cmds:
+    - |
+      if [ ! -d ".venv" ]; then
+        echo "❌ Virtual environment not found. Run 'task shared:setup:python' first."
+        exit 1
+      fi
+      
+      # Activate virtual environment
+      SHELL_NAME=$(basename "$SHELL")
+      case "$SHELL_NAME" in
+        "fish")
+          [ -f ".venv/bin/activate.fish" ] && source .venv/bin/activate.fish || source .venv/bin/activate
+          ;;
+        "csh" | "tcsh")
+          [ -f ".venv/bin/activate.csh" ] && source .venv/bin/activate.csh || source .venv/bin/activate
+          ;;
+        *)
+          source .venv/bin/activate
+          ;;
+      esac
+
   # Setup tasks - used by all other tasks
   setup:
     desc: Setup development environment (install dependencies and tools)
     silent: true
-    deps: [deps:install, setup:python]
+    deps: [":deps:install", setup:python]
     cmds:
     - echo "✅ Development environment setup completed"
     - echo "🎯 Go dependencies, development tools, and Python environment are ready!"
