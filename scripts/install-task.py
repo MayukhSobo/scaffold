@@ -13,6 +13,7 @@ import shutil
 import tempfile
 import urllib.request
 import json
+import re
 from pathlib import Path
 from typing import Optional, Tuple
 
@@ -101,11 +102,27 @@ class TaskInstaller:
         
         success, output = self._run_command(['task', '--version'])
         if success:
-            # Extract version from output like "Task version: v3.21.0"
+            # Extract version from output - can be just "3.44.0" or "Task version: v3.21.0"
+            output = output.strip()
+            
+            # Look for version pattern (e.g., "3.44.0", "v3.21.0", "1.2.3-beta")
+            version_pattern = r'v?(\d+\.\d+\.\d+(?:-[\w\.]+)?)'
+            
             for line in output.split('\n'):
+                line = line.strip()
+                if not line:
+                    continue
+                    
+                # Check if line contains "version:" (old format)
                 if 'version:' in line.lower():
-                    version = line.split(':')[-1].strip().lstrip('v')
-                    return True, version
+                    match = re.search(version_pattern, line)
+                    if match:
+                        return True, match.group(1)
+                
+                # Check if line is just a version number (new format)
+                match = re.search(version_pattern, line)
+                if match:
+                    return True, match.group(1)
         
         return True, "unknown"
     
